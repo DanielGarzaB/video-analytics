@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Video Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body class="text-slate-800">
+    <!-- HEADER -->
+    <nav class="bg-slate-900 text-white shadow-lg no-print sticky top-0 z-50">
+      <div
+        class="app-bar max-w-7xl mx-auto w-full justify-center gap-3 flex-wrap lg:flex-nowrap overflow-hidden text-center"
+      >
+        <div class="flex items-center gap-2 app-brand">
+          <div
+            class="bg-primary-soft text-primary rounded-md flex items-center justify-center leading-none logo-mark"
+            aria-hidden="true"
+          >
+            <span>▶️</span>
+          </div>
+          <h1 class="logo-text">Video Analytics</h1>
+        </div>
+      </div>
+    </nav>
+
+    <!-- LAYOUT CON SIDEBAR (fuera del main) -->
+    <div id="appShell" class="layout-shell">
+      <aside
+        id="filterSidebar"
+        class="filter-sidebar no-print space-y-3 hidden" hidden
+        aria-label="Sidebar de filtros"
+      >
+        <div id="summaryBar" class="filter-card hidden" hidden>
+          <div class="stat-inline">
+            <div class="stat-item">
+              <span class="stat-label">% Videos</span>
+              <span id="videosPercentDisplay" class="stat-value">100%</span>
+            </div>
+            <span class="stat-separator" aria-hidden="true">|</span>
+            <div class="stat-item">
+              <span class="stat-label">Videos</span>
+              <span id="videosDisplay" class="stat-value">0</span>
+            </div>
+            <span class="stat-separator" aria-hidden="true">|</span>
+            <div class="stat-item">
+              <span class="stat-label">Views Prom.</span>
+              <span id="avgViewsDisplay" class="stat-value">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-card space-y-4">
+          <div class="filter-card__title">
+            <span class="filter-title">🎛️ Filtros</span>
+          </div>
+
+          <div class="space-y-3">
+            <select id="creatorSelect" class="filter-select">
+              <option value="all">Todos los creadores</option>
+            </select>
+
+            <div
+              id="platformChips"
+              class="platform-chips"
+              role="group"
+              aria-label="Filtrar por plataforma"
+            >
+              <button type="button" class="platform-chip is-active platform-chip--facebook" data-platform="facebook" data-platform-chip="facebook" aria-pressed="true">
+                <i class="fa-brands fa-facebook"></i><span>Facebook</span>
+              </button>
+              <button type="button" class="platform-chip is-active platform-chip--tiktok" data-platform="tiktok" data-platform-chip="tiktok" aria-pressed="true">
+                <i class="fa-brands fa-tiktok"></i><span>TikTok</span>
+              </button>
+              <button type="button" class="platform-chip is-active platform-chip--youtube" data-platform="youtube" data-platform-chip="youtube" aria-pressed="true">
+                <i class="fa-brands fa-youtube"></i><span>YouTube</span>
+              </button>
+              <button type="button" class="platform-chip is-active platform-chip--instagram" data-platform="instagram" data-platform-chip="instagram" aria-pressed="true">
+                <i class="fa-brands fa-instagram"></i><span>Instagram</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-section-divider flex flex-col gap-2 date-range-section">
+            <div class="flex items-center gap-3 flex-nowrap w-full">
+              <span class="filter-label inline-label">📅 Fechas</span>
+              <div class="date-row">
+                <div class="date-input" role="group" aria-label="Fecha inicio">
+                  <input type="text" id="dateStart" aria-label="Fecha inicio" />
+                  <input type="date" id="dateStartNative" class="date-input__native" aria-hidden="true" tabindex="-1" />
+                </div>
+                <span class="text-slate-400 text-sm">-</span>
+                <div class="date-input" role="group" aria-label="Fecha fin">
+                  <input type="text" id="dateEnd" aria-label="Fecha fin" />
+                  <input type="date" id="dateEndNative" class="date-input__native" aria-hidden="true" tabindex="-1" />
+                </div>
+              </div>
+            </div>
+            <div class="filter-presets" role="group" aria-label="Rango rapido de fechas">
+              <button class="preset-btn" data-days-range="7">7</button>
+              <button class="preset-btn" data-days-range="30">30</button>
+              <button class="preset-btn" data-days-range="60">60</button>
+              <button class="preset-btn" data-days-range="90">90</button>
+              <button class="preset-btn" data-days-range="180">180</button>
+              <button class="preset-btn" data-days-range="365">1y</button>
+              <button class="preset-btn" data-days-range="730">2y</button>
+              <button class="preset-btn" data-days-range="1095">3y</button>
+              <button class="preset-btn" data-days-range="0">All</button>
+            </div>
+          </div>
+
+          <div class="filter-section-divider flex flex-col gap-2">
+            <div class="flex items-center gap-3 flex-nowrap w-full">
+              <span class="filter-label inline-label">👀 Views</span>
+              <div class="filter-range inline flex-1 min-w-0 w-full">
+                <input
+                  id="viewMinInput"
+                  class="range-value-input"
+                  type="text"
+                  value="0"
+                  aria-label="Views minimas"
+                />
+                <div class="range-slider">
+                  <div id="viewTrack" class="range-slider__track"></div>
+                  <input type="range" id="viewRangeMin" min="0" max="50000000" step="100000" value="0" class="range-slider__input z-20" />
+                  <input type="range" id="viewRangeMax" min="0" max="50000000" step="100000" value="50000000" class="range-slider__input z-10" />
+                </div>
+                <input
+                  id="viewMaxInput"
+                  class="range-value-input"
+                  type="text"
+                  value="50.0M+"
+                  aria-label="Views maximas"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-3 flex-nowrap w-full">
+              <span class="filter-label inline-label">⏱️ Duracion</span>
+              <div class="filter-range inline flex-1 min-w-0 w-full">
+                <input
+                  id="minDur"
+                  class="range-value-input"
+                  type="text"
+                  value="0"
+                  aria-label="Duracion minima"
+                />
+                <div class="range-slider">
+                  <div id="durTrack" class="range-slider__track"></div>
+                  <input type="range" id="durRangeMin" min="0" max="360" step="1" value="0" class="range-slider__input z-20" />
+                  <input type="range" id="durRangeMax" min="0" max="360" step="1" value="360" class="range-slider__input z-10" />
+                </div>
+                <input
+                  id="maxDur"
+                  class="range-value-input"
+                  type="text"
+                  value="360"
+                  aria-label="Duracion maxima"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-card space-y-3">
+          <div class="filter-card__title">
+            <span class="filter-title">📊 Graficas</span>
+          </div>
+          <div class="group-toggle group-toggle-inline filter-section-divider" role="group" aria-label="Agrupar">
+            <span class="sub-label inline-label">Agrupar X</span>
+            <label class="group-pill">
+              <input type="radio" name="timeGroup" value="day" />
+              <span>Dia</span>
+            </label>
+            <label class="group-pill">
+              <input type="radio" name="timeGroup" value="week" checked />
+              <span>Sem</span>
+            </label>
+            <label class="group-pill">
+              <input type="radio" name="timeGroup" value="month" />
+              <span>Mes</span>
+            </label>
+            <label class="group-pill">
+              <input type="radio" name="timeGroup" value="quarter" />
+              <span>Trim</span>
+            </label>
+            <label class="group-pill">
+              <input type="radio" name="timeGroup" value="year" />
+              <span>Año</span>
+            </label>
+          </div>
+          <div class="space-y-2 filter-section-divider">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="filter-label inline-label">Tramos</span>
+              <div
+                id="durationRangeInputs"
+                class="duration-cuts-grid w-full flex-1"
+              ></div>
+            </div>
+            <div class="flex flex-wrap gap-2 justify-center">
+              <button
+                type="button"
+                class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 duration-preset-btn"
+                data-duration-preset="shorts"
+              >
+                Shorts
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 duration-preset-btn"
+                data-duration-preset="facebook"
+              >
+                Facebook
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 duration-preset-btn"
+                data-duration-preset="youtube"
+              >
+                YouTube
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 duration-preset-btn"
+                data-duration-preset="ultralong"
+              >
+                1 Hora+
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+        <div class="space-y-4 main-area">
+          <div id="mainContent" class="max-w-7xl mx-auto px-6 pb-6 pt-3">
+            <!-- 1. UPLOAD -->
+            <div
+              id="uploadSection"
+              class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center mb-8 no-print"
+            >
+              <div class="max-w-lg mx-auto">
+                <div
+                  id="dropZone"
+                  class="drop-zone rounded-xl p-10 cursor-pointer bg-slate-50 group relative overflow-hidden"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Subir archivos CSV"
+                >
+                  <input
+                    type="file"
+                    id="fileInput"
+                    accept=".csv"
+                    multiple
+                    class="hidden"
+                  />
+                  <div class="relative z-10">
+                    <i
+                      class="fa-solid fa-cloud-arrow-up text-5xl text-slate-300 mb-4 group-hover:text-primary transition transform group-hover:-translate-y-1"
+                    ></i>
+                    <p
+                      class="text-lg font-medium text-slate-600 group-hover:text-primary"
+                    >
+                      Arrastra o haz clic para subir
+                    </p>
+                    <p class="text-xs text-slate-400 mt-2">
+                      Soporta uno o varios CSV
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-6">
+                  <button
+                    id="pasteToggleBtn"
+                    class="text-xs text-primary hover:text-primary-dark font-medium underline decoration-dashed"
+                  >
+                    Opción avanzada: Pegar texto CSV
+                  </button>
+                  <div id="pasteArea" class="hidden mt-3 animate-fade-in">
+                    <textarea
+                      id="csvText"
+                      class="w-full h-32 border border-slate-300 rounded-lg text-xs p-3 font-mono focus:ring-2 focus:ring-primary outline-none"
+                      placeholder="Pega las filas del CSV aquí..."
+                    ></textarea>
+                    <button
+                      id="processPasteBtn"
+                      class="w-full bg-primary-strong text-white py-2 rounded-lg text-sm font-bold mt-2 hover:bg-primary-dark transition"
+                    >
+                      Procesar Texto
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- REPORT AREA -->
+            <div id="reportArea" class="hidden space-y-4 pt-0" hidden>
+              <div class="chart-container surface surface-tight with-header">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm text-left table-reset">
+                    <thead class="table-head">
+                      <tr>
+                        <th class="text-left w-2/5 summary-toggle-cell">
+                          <span class="sr-only">Periodo o Creador</span>
+                          <div class="chart-actions summary-toggle">
+                            <button
+                              id="summaryModePeriod"
+                              data-summary-mode="period"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Periodo
+                            </button>
+                            <button
+                              id="summaryModeCreators"
+                              data-summary-mode="creator"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Creadores
+                            </button>
+                          </div>
+                        </th>
+                        <th class="text-right w-1/6">Videos</th>
+                        <th class="text-right w-1/6">Views</th>
+                        <th
+                          class="text-center summary-platform-col"
+                          data-summary-platform-col
+                          data-platform-key="facebook"
+                        >
+                          <i class="fa-brands fa-facebook text-lg platform-icon platform-icon--facebook" aria-hidden="true"></i>
+                        </th>
+                        <th
+                          class="text-center summary-platform-col"
+                          data-summary-platform-col
+                          data-platform-key="tiktok"
+                        >
+                          <i class="fa-brands fa-tiktok text-lg platform-icon platform-icon--tiktok" aria-hidden="true"></i>
+                        </th>
+                        <th
+                          class="text-center summary-platform-col"
+                          data-summary-platform-col
+                          data-platform-key="youtube"
+                        >
+                          <i class="fa-brands fa-youtube text-lg platform-icon platform-icon--youtube" aria-hidden="true"></i>
+                        </th>
+                        <th
+                          class="text-center summary-platform-col"
+                          data-summary-platform-col
+                          data-platform-key="instagram"
+                        >
+                          <i class="fa-brands fa-instagram text-lg platform-icon platform-icon--instagram" aria-hidden="true"></i>
+                        </th>
+                        <th class="text-right w-1/6">Duracion Promedio</th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      id="summaryTableBody"
+                      class="divide-y divide-slate-100"
+                    ></tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- PAGE 1: TABLE -->
+              <div
+                class="chart-container table-container surface surface-tight surface-table with-header"
+              >
+                <div class="chart-header mb-2 pb-2 border-b border-slate-100">
+                  <h3 class="text-lg font-bold text-slate-800 w-full text-center">
+                    Top 100 Videos
+                  </h3>
+                </div>
+                <div
+                  class="overflow-x-auto max-h-[760px] overflow-y-auto relative rounded-lg border border-slate-100 table-shell"
+                >
+                  <table class="w-full text-sm text-left table-reset">
+                    <thead class="table-head sticky top-0 z-10">
+                      <tr>
+                        <th class="text-center w-12">#</th>
+                        <th class="text-center w-[110px]">Fecha</th>
+                        <th class="text-right">Views</th>
+                        <th class="text-right">V30</th>
+                        <th class="text-center w-[86px]">Duración</th>
+                        <th class="text-left w-[720px]">Video</th>
+                        <th class="text-center w-[120px]">Plataforma</th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      id="topVideosBody"
+                      class="divide-y divide-slate-100 table-body"
+                    ></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- PAGE 2: FREQUENCY & VIEWS -->
+              <div class="pdf-page">
+                <div class="card space-y-6">
+                  <div>
+                    <div class="chart-container surface surface-tight with-header">
+                      <div
+                        class="chart-header chart-header--balanced mb-2 pb-2 border-b border-slate-100 gap-3"
+                      >
+                        <div class="chart-header__block chart-header__block--start">
+                          <h3 class="text-lg font-bold text-slate-800">
+                            1. Publicación
+                          </h3>
+                          <div
+                            class="flex bg-slate-100 rounded-full p-1 text-sm font-semibold text-slate-600 chart-actions ml-2"
+                            role="group"
+                            aria-label="Métrica de publicaciones"
+                          >
+                            <button
+                              id="chart1MetricVideos"
+                              data-chart1-metric="videos"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Videos
+                            </button>
+                            <button
+                              id="chart1MetricMinutes"
+                              data-chart1-metric="minutes"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Minutos
+                            </button>
+                          </div>
+                        </div>
+                        <div class="chart-header__block chart-header__block--end">
+                          <div
+                            class="flex bg-slate-100 rounded-full p-1 text-sm font-semibold text-slate-600 chart-actions"
+                            role="group"
+                            aria-label="Modo de gráfico de publicaciones"
+                          >
+                            <button
+                              id="chart1ToggleBar"
+                              data-chart1-mode="bar"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Barras
+                            </button>
+                            <button
+                              id="chart1ToggleLine"
+                              data-chart1-mode="line"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Línea
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <canvas id="c1"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PAGE 3: DURATION & VIEWS -->
+              <div class="pdf-page">
+                <div class="card space-y-6">
+                  <div>
+                    <div class="chart-container surface surface-tight with-header">
+                      <div
+                        class="chart-header mb-2 pb-2 border-b border-slate-100 flex items-center justify-between gap-3"
+                      >
+                        <div class="flex items-center gap-2">
+                          <h3 class="text-lg font-bold text-slate-800">
+                            2. Views Totales generado por los videos publicados solo en
+                            esa fecha
+                          </h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <div
+                            class="flex bg-slate-100 rounded-full p-1 text-sm font-semibold text-slate-600 chart-actions"
+                            role="group"
+                            aria-label="Vista del gráfico de promedio por video"
+                          >
+                            <button
+                              id="chart2ToggleBar"
+                              data-chart2-mode="bar"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Barras
+                            </button>
+                            <button
+                              id="chart2ToggleLine"
+                              data-chart2-mode="line"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Línea
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <canvas id="c2"></canvas>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="chart-container surface surface-tight with-header">
+                      <div
+                        class="chart-header mb-2 pb-2 border-b border-slate-100 flex items-center justify-between gap-3"
+                      >
+                        <div class="flex items-center gap-2">
+                          <h3 class="text-lg font-bold text-slate-800">
+                            3. Views promedio por video
+                          </h3>
+                          <button
+                            id="chart4ToggleV30"
+                            data-chart4-metric="v30"
+                            data-active-class="v30-toggle-active"
+                            data-inactive-class="v30-toggle-inactive"
+                            class="v30-toggle px-3 py-1 text-sm font-semibold rounded-full ml-2"
+                            aria-pressed="false"
+                          >
+                            Primeros 30 días
+                          </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <div
+                            class="flex bg-slate-100 rounded-full p-1 text-sm font-semibold text-slate-600 chart-actions"
+                          >
+                            <button
+                              id="chart3ToggleBar"
+                              data-chart3-mode="bar"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Barras
+                            </button>
+                            <button
+                              id="chart3ToggleLine"
+                              data-chart3-mode="line"
+                              class="px-3 py-1 rounded-full"
+                              aria-pressed="false"
+                            >
+                              Línea
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <canvas id="cWeeklyViews"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PAGE 4: DURATION & SCATTER -->
+              <div class="pdf-page">
+                <div class="card space-y-6">
+                  <div>
+                    <div class="chart-container-lg surface surface-roomy with-header">
+                      <div class="chart-header mb-2 pb-2 border-b border-slate-100 flex items-center gap-3">
+                        <h3 class="text-lg font-bold text-slate-800">
+                          4. Views promedio por Duración
+                        </h3>
+                        <button
+                          id="rangeBarsV30"
+                          data-range-bar="v30"
+                          data-active-class="v30-toggle-active"
+                          data-inactive-class="v30-toggle-inactive"
+                          class="v30-toggle px-3 py-1 text-sm font-semibold rounded-full"
+                          aria-pressed="false"
+                        >
+                          Primeros 30 días
+                        </button>
+                      </div>
+                      <canvas id="cViewsRange"></canvas>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="chart-container-lg surface surface-roomy with-header">
+                      <div class="chart-header mb-2 pb-2 border-b border-slate-100">
+                        <h3 class="text-lg font-bold text-slate-800">
+                          5. Duraciones x Periodo
+                        </h3>
+                      </div>
+                      <canvas id="cTrendDur"></canvas>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="chart-container-lg surface surface-roomy with-header">
+                      <div
+                        class="chart-header flex items-center gap-3 mb-2 pb-2 border-b border-slate-100"
+                      >
+                        <h3 class="text-lg font-bold text-slate-800">
+                          6. Duración vs
+                        </h3>
+                        <div
+                          class="flex bg-slate-100 rounded-full p-1 text-sm font-semibold text-slate-600 chart-actions"
+                          role="group"
+                          aria-label="Modo de gráfico duración vs views"
+                        >
+                          <button
+                            id="chart6TogglePerDay"
+                            data-chart6-mode="perDay"
+                            class="px-3 py-1 rounded-full"
+                            aria-pressed="false"
+                          >
+                            Views por Día
+                          </button>
+                          <button
+                            id="chart6ToggleTotal"
+                            data-chart6-mode="total"
+                            class="px-3 py-1 rounded-full"
+                            aria-pressed="false"
+                          >
+                            Views Totales
+                          </button>
+                        </div>
+                        <div
+                          id="chart6Note"
+                          class="ml-auto text-xs text-slate-500 italic whitespace-nowrap"
+                        >
+                          * Videos de los últimos 14 días ignorados
+                        </div>
+                      </div>
+                      <canvas id="cScatterDurViews"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <script defer src="js/app.bundle.js"></script>
+  </body>
+</html>

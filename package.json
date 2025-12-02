@@ -1,0 +1,19 @@
+{
+  "name": "tubular-labs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "js/app.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0"
+  }
+}

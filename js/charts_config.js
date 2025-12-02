@@ -1,0 +1,67 @@
+import { fmtDur, fmtAxisDuration } from "./utils_formatters.js";
+
+const appConfig = typeof window !== "undefined" ? window.CONFIG || {} : {};
+const Y_AXIS_WIDTH = appConfig.Y_AXIS_WIDTH || 75;
+
+export function commonOpt(scaleX, scaleY) {
+  const yConfig = scaleY || {};
+  yConfig.afterFit = (scale) => {
+    scale.width = Y_AXIS_WIDTH;
+  };
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    resizeDelay: 0,
+    layout: { padding: { right: 18 } },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: scaleX || {},
+      y: yConfig,
+    },
+  };
+}
+
+export function timeScatterOpt(yLabel) {
+  const yAxis = {
+    title: { display: true, text: yLabel },
+    afterFit: (scale) => {
+      scale.width = Y_AXIS_WIDTH;
+    },
+  };
+  if (typeof yLabel === "string" && yLabel.toLowerCase().includes("duraci")) {
+    yAxis.ticks = { callback: (value) => fmtAxisDuration(value) };
+  }
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    responsiveAnimationDuration: 0,
+    layout: { padding: { right: 18 } },
+    plugins: {
+      legend: { display: true },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const raw = context.raw || {};
+            const fullTitle = raw.title || context.dataset?.label || "Dato";
+            const title =
+              fullTitle.length > 30
+                ? `${fullTitle.substring(0, 27)}...`
+                : fullTitle;
+            const yVal = raw.y ?? context.parsed?.y ?? 0;
+            return `${title} (${fmtDur(yVal)})`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: "time",
+        time: { unit: "day", displayFormats: { day: "dd MMM" } },
+      },
+      y: yAxis,
+    },
+  };
+}
