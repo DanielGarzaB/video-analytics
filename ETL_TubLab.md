@@ -1,4 +1,4 @@
-# 🎥 Guia practica: extraer datos de Tubular Labs (Video Gallery)
+# 🎥 Guia practica: extraer datos de TubLab (Video Gallery)
 
 > Objetivo: automatizar los clics en "Load more" y exportar la tabla de Video Gallery a CSV con: `video`, `creator_name`, `video_url`, `image_url`, `upload_date`, `views`, `v30`, `duration`, `platform` + columnas normalizadas (`views_num`, `v30_num`, `duration_sec`).
 
@@ -24,7 +24,7 @@
 | Navegador | Chrome o Edge (Chromium) |
 | Herramienta | DevTools Console (F12 -> Console) |
 | Permiso | Escribir `allow pasting` + Enter antes de pegar codigo |
-| Pagina | Estar en la vista "Video Gallery" de Tubular Labs |
+| Pagina | Estar en la vista "Video Gallery" de TubLab |
 
 ---
 
@@ -39,8 +39,8 @@
 | `finalDelay` | number | 3000 | Espera final antes de leer la tabla |
 | `normalizeNumbers` | boolean | true | Convertir vistas (K/M/B) a numero y duracion a segundos |
 | `downloadFile` | boolean | true | `true` = descarga CSV, `false` = solo portapapeles |
-| `promptFileName` | boolean | false | `false` = nombre auto `Tubularlabs_yy_mm_dd_HHmmss.csv` |
-| `fileNamePrefix` | string | `Tubular_Videos` | Prefijo para el CSV exportado |
+| `promptFileName` | boolean | false | `false` = nombre auto `TubLab_yy_mm_dd_HHmmss.csv` |
+| `fileNamePrefix` | string | `TubLab_Videos` | Prefijo para el CSV exportado |
 
 ---
 
@@ -126,7 +126,7 @@
   const EXTRACT_CONFIG = {
     normalizeNumbers: true,
     downloadFile: true,
-    fileNamePrefix: "Tubular_Videos"
+    fileNamePrefix: "TubLab_Videos"
   };
 
   const csvEscape = (val) => '"' + String(val || "").replace(/"/g, '""') + '"';
@@ -283,7 +283,7 @@
 
 ```js
 (async () => {
-  console.log("[START] EXTRACTOR TUBULAR LABS v3.1 - FIXED");
+  console.log("[START] EXTRACTOR TUBLAB v3.1 - FIXED");
   console.log("=".repeat(60));
 
   const CONFIG = {
@@ -299,7 +299,7 @@
   const pad = n => String(n).padStart(2, "0");
   const generateFileName = () => {
     const now = new Date();
-    return `Tubular_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
+    return `TubLab_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
   };
   const parseViews = txt => {
     if (!txt || txt === "--") return 0;
@@ -577,7 +577,7 @@ Ejecuta este bloque para ver indices y valores de la primera fila; con esa info 
 | No clickea el boton | Revisa que la consola este en el frame "top" y aumenta `delayMs` si la pagina es lenta |
 | No encuentra la tabla | Asegurate de estar en "Video Gallery" |
 | No copia al portapapeles | Descarga el CSV (se guardara igual) |
-| Demasiados clics | Baja `maxClicks` o usa filtros en Tubular |
+| Demasiados clics | Baja `maxClicks` o usa filtros en TubLab |
 | Caracteres raros al abrir el CSV en Excel | El CSV lleva BOM UTF-8; si aun asi pasa, usa "Datos > Obtener datos > Desde texto/CSV" y elige UTF-8. |
 
 ---

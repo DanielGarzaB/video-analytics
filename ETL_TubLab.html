@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Guia practica ETL Tubular Labs</title>
+  <title>Guia practica ETL TubLab</title>
   <style>
     :root {
       --bg: #f6f7fb;
@@ -240,11 +240,11 @@
     <article class="doc">
       <section class="hero">
         <div class="pill-row">
-          <span class="pill neutral">Tubular Labs</span>
+          <span class="pill neutral">TubLab</span>
           <span class="pill neutral">Video Gallery</span>
           <span class="pill success">CSV listo</span>
         </div>
-        <h1 id="guia-practica-extraer-datos-de-tubular-labs-video-gallery">🎬 Guia practica: extraer datos de Tubular Labs (Video Gallery)</h1>
+        <h1 id="guia-practica-extraer-datos-de-tublab-video-gallery">🎬 Guia practica: extraer datos de TubLab (Video Gallery)</h1>
         <p class="lede">Objetivo: automatizar los clics en "Load more" y exportar la tabla de Video Gallery a CSV con: <code>video</code>, <code>creator_name</code>, <code>video_url</code>, <code>image_url</code>, <code>upload_date</code>, <code>views</code>, <code>v30</code>, <code>duration</code>, <code>platform</code> + columnas normalizadas (<code>views_num</code>, <code>v30_num</code>, <code>duration_sec</code>).</p>
         <div class="hero-meta">
           <div class="meta-card">
@@ -305,7 +305,7 @@
 </tr>
 <tr>
 <td>Pagina</td>
-<td>Estar en la vista &quot;Video Gallery&quot; de Tubular Labs</td>
+<td>Estar en la vista &quot;Video Gallery&quot; de TubLab</td>
 </tr>
 </tbody>
 </table>
@@ -362,12 +362,12 @@
 <td><code>promptFileName</code></td>
 <td>boolean</td>
 <td>false</td>
-<td><code>false</code> = nombre auto <code>Tubularlabs_yy_mm_dd_HHmmss.csv</code></td>
+<td><code>false</code> = nombre auto <code>TubLab_yy_mm_dd_HHmmss.csv</code></td>
 </tr>
 <tr>
 <td><code>fileNamePrefix</code></td>
 <td>string</td>
-<td><code>Tubular_Videos</code></td>
+<td><code>TubLab_Videos</code></td>
 <td>Prefijo para el CSV exportado</td>
 </tr>
 </tbody>
@@ -452,7 +452,7 @@
   const EXTRACT_CONFIG = {
     normalizeNumbers: true,
     downloadFile: true,
-    fileNamePrefix: &quot;Tubular_Videos&quot;
+    fileNamePrefix: &quot;TubLab_Videos&quot;
   };
 
   const csvEscape = (val) =&gt; '&quot;' + String(val || &quot;&quot;).replace(/&quot;/g, '&quot;&quot;') + '&quot;';
@@ -605,7 +605,7 @@
 <p><a id="opcion-b-todo-en-uno"></a></p>
 <h2 id="opcion-b-todo-en-uno-pegar-y-listo">🅱️ Opcion B: todo en uno (pegar y listo)</h2>
 <pre><code class="language-js">(async () =&gt; {
-  console.log(&quot;[START] EXTRACTOR TUBULAR LABS v3.1 - FIXED&quot;);
+  console.log(&quot;[START] EXTRACTOR TUBLAB v3.1 - FIXED&quot;);
   console.log(&quot;=&quot;.repeat(60));
 
   const CONFIG = {
@@ -621,7 +621,7 @@
   const pad = n =&gt; String(n).padStart(2, &quot;0&quot;);
   const generateFileName = () =&gt; {
     const now = new Date();
-    return `Tubular_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
+    return `TubLab_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
   };
   const parseViews = txt =&gt; {
     if (!txt || txt === &quot;--&quot;) return 0;
@@ -916,7 +916,7 @@
 </tr>
 <tr>
 <td>Demasiados clics</td>
-<td>Baja <code>maxClicks</code> o usa filtros en Tubular</td>
+<td>Baja <code>maxClicks</code> o usa filtros en TubLab</td>
 </tr>
 <tr>
 <td>Caracteres raros al abrir el CSV en Excel</td>

@@ -219,6 +219,9 @@
       .text-slate-600 {
         color: #475569;
       }
+      .text-slate-700 {
+        color: #334155;
+      }
       .text-slate-400 {
         color: #94a3b8;
       }
@@ -450,7 +453,7 @@
                 class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 duration-preset-btn"
                 data-duration-preset="youtube"
               >
-                YouTube
+                30 mins+
               </button>
               <button
                 type="button"
@@ -465,7 +468,7 @@
       </aside>
 
         <div class="space-y-4 main-area">
-          <div id="mainContent" class="max-w-7xl mx-auto px-6 pb-6 pt-3">
+          <main id="mainContent" class="max-w-7xl mx-auto px-6 pb-6 pt-3" role="main">
             <!-- 1. UPLOAD -->
             <div
               id="uploadSection"
@@ -516,18 +519,29 @@
                     >
                       Arrastra o haz clic para subir
                     </p>
-                    <p id="dropZoneHelp" class="text-xs text-slate-400 mt-2">
+                    <p id="dropZoneHelp" class="text-xs text-slate-700 mt-2">
                       Soporta uno o varios CSV
                     </p>
                   </div>
                 </div>
                 <div class="mt-6">
-                  <button
-                    id="pasteToggleBtn"
-                    class="text-xs text-primary hover:text-primary-dark font-medium underline decoration-dashed"
-                  >
-                    Opción avanzada: Pegar texto CSV
-                  </button>
+                  <div class="flex items-center justify-center gap-2 flex-wrap text-center">
+                    <button
+                      id="pasteToggleBtn"
+                      class="text-xs text-primary hover:text-primary-dark font-medium underline decoration-dashed"
+                    >
+                      Opción avanzada: Pegar texto CSV
+                    </button>
+                    <span class="text-slate-300 text-xs" aria-hidden="true">|</span>
+                    <a
+                      href="ETL_TubLab.html"
+                      target="_blank"
+                      rel="nofollow noopener noreferrer noindex"
+                      class="text-xs text-primary hover:text-primary-dark font-medium underline decoration-dashed"
+                    >
+                      Instrucciones para CSV
+                    </a>
+                  </div>
                   <div id="pasteArea" class="hidden mt-3 animate-fade-in">
                     <textarea
                       id="csvText"
@@ -878,10 +892,9 @@
                 </div>
               </div>
             </div>
-            </div>
+            </main>
           </div>
         </div>
-      </div>
 
     <script
       defer
