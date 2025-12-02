@@ -82,8 +82,8 @@
         const chartModes = {
           chart1: "bar",
           chart1Metric: "videos",
-          chart2: "bar",
-          chart3: "bar",
+          chart2: "line",
+          chart3: "line",
           chart4: "views",
           chart6: "perDay",
           rangeBars: "views",
@@ -884,7 +884,12 @@
       responsiveAnimationDuration: 0,
       layout: { padding: { right: 18 } },
       plugins: {
-        legend: { display: true },
+        legend: {
+          display: true,
+          position: "bottom",
+          align: "center",
+          labels: { usePointStyle: true, boxWidth: 12, padding: 12 }
+        },
         tooltip: {
           callbacks: {
             label: (context) => {
@@ -1087,9 +1092,18 @@
     chart1Options.plugins.legend = chart1Options.plugins.legend || {};
     chart1Options.plugins.legend.display = chart1IsStacked;
     if (chart1IsStacked) {
+      chart1Options.plugins.legend.position = "bottom";
+      chart1Options.plugins.legend.align = "center";
       chart1Options.plugins.legend.labels = {
         usePointStyle: true,
-        boxWidth: 12
+        boxWidth: 12,
+        padding: 12
+      };
+      chart1Options.layout = chart1Options.layout || {};
+      const basePadding = chart1Options.layout.padding || {};
+      chart1Options.layout.padding = {
+        ...basePadding,
+        bottom: Math.max(basePadding.bottom || 0, 16)
       };
       chart1Options.scales = chart1Options.scales || {};
       chart1Options.scales.x = { ...chart1Options.scales.x || {}, stacked: true };
@@ -1208,7 +1222,12 @@
         maintainAspectRatio: false,
         layout: { padding: { top: 12, bottom: 42, right: 18 } },
         plugins: {
-          legend: { display: true, position: "top" },
+          legend: {
+            display: true,
+            position: "bottom",
+            align: "center",
+            labels: { usePointStyle: true, boxWidth: 12, padding: 12 }
+          },
           tooltip: {
             callbacks: {
               label: (context) => {
@@ -1255,8 +1274,7 @@
       },
       plugins: [
         cViewsRangeLineOnTop,
-        cViewsRangeLabels,
-        cViewsRangeV30Ticks(rangeBarMetric, rangeStats)
+        cViewsRangeLabels
       ]
     });
     const chart2Mode = appState.getMode("chart2");

@@ -40,7 +40,12 @@ export function timeScatterOpt(yLabel) {
     responsiveAnimationDuration: 0,
     layout: { padding: { right: 18 } },
     plugins: {
-      legend: { display: true },
+      legend: {
+        display: true,
+        position: "bottom",
+        align: "center",
+        labels: { usePointStyle: true, boxWidth: 12, padding: 12 },
+      },
       tooltip: {
         callbacks: {
           label: (context) => {

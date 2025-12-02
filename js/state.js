@@ -7,8 +7,8 @@ const State = (() => {
   const chartModes = {
     chart1: "bar",
     chart1Metric: "videos",
-    chart2: "bar",
-    chart3: "bar",
+    chart2: "line",
+    chart3: "line",
     chart4: "views",
     chart6: "perDay",
     rangeBars: "views",

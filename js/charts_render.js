@@ -144,9 +144,18 @@ export function renderCharts() {
   chart1Options.plugins.legend = chart1Options.plugins.legend || {};
   chart1Options.plugins.legend.display = chart1IsStacked;
   if (chart1IsStacked) {
+    chart1Options.plugins.legend.position = "bottom";
+    chart1Options.plugins.legend.align = "center";
     chart1Options.plugins.legend.labels = {
       usePointStyle: true,
       boxWidth: 12,
+      padding: 12,
+    };
+    chart1Options.layout = chart1Options.layout || {};
+    const basePadding = chart1Options.layout.padding || {};
+    chart1Options.layout.padding = {
+      ...basePadding,
+      bottom: Math.max(basePadding.bottom || 0, 16),
     };
     chart1Options.scales = chart1Options.scales || {};
     chart1Options.scales.x = { ...(chart1Options.scales.x || {}), stacked: true };
@@ -286,12 +295,17 @@ export function renderCharts() {
       animation: false,
       responsiveAnimationDuration: 0,
       maintainAspectRatio: false,
-      layout: { padding: { top: 12, bottom: 42, right: 18 } },
-      plugins: {
-        legend: { display: true, position: "top" },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
+    layout: { padding: { top: 12, bottom: 42, right: 18 } },
+    plugins: {
+      legend: {
+        display: true,
+        position: "bottom",
+        align: "center",
+        labels: { usePointStyle: true, boxWidth: 12, padding: 12 },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
               if (context.dataset.yAxisID === "y") {
                 const metricLabel =
                   rangeBarMetric === "views" ? "Views Prom" : V30_LABEL_PROM;
@@ -340,7 +354,6 @@ export function renderCharts() {
     plugins: [
       plugins.cViewsRangeLineOnTop,
       plugins.cViewsRangeLabels,
-      plugins.cViewsRangeV30Ticks(rangeBarMetric, rangeStats),
     ],
   });
 
