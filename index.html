@@ -5,17 +5,236 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Video Analytics</title>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2"
+    />
+    <link
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
+    <link
+      rel="preload"
+      as="style"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      crossorigin="anonymous"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      media="print"
+      onload="this.media='all'"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+      />
+    </noscript>
+    <link rel="preload" as="style" href="styles.css" />
+    <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="styles.css" /></noscript>
+    <!-- CSS critico ATF: actualizar si cambian cabecera o dropzone -->
+    <style id="critical-atf">
+      :root {
+        --color-primary: #6366f1;
+        --color-primary-soft: #eef2ff;
+        --color-primary-strong: #4f46e5;
+        --color-surface: #ffffff;
+        --color-surface-border: #e2e8f0;
+        --color-body: #f8fafc;
+        --color-text: #0f172a;
+        --color-muted: #64748b;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--color-body);
+        color: var(--color-text);
+      }
+      button:focus-visible,
+      a:focus-visible,
+      #dropZone:focus-visible {
+        outline: 3px solid var(--color-primary);
+        outline-offset: 3px;
+      }
+      nav.bg-slate-900 {
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.5);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .app-bar {
+        min-height: 52px;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+      .app-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .logo-mark {
+        width: 34px;
+        height: 34px;
+        background: var(--color-primary-soft);
+        color: var(--color-primary);
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+      .logo-text {
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: 0.01em;
+      }
+      .layout-shell {
+        display: flex;
+        justify-content: center;
+        padding: 0 1.5rem 1.5rem;
+      }
+      .main-area {
+        width: 100%;
+        max-width: 82rem;
+        margin: 0 auto;
+      }
+      #mainContent {
+        padding: 1rem 1.5rem 1.5rem;
+      }
+      #uploadSection {
+        background: var(--color-surface);
+        border: 1px solid var(--color-surface-border);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px -20px rgba(15, 23, 42, 0.45);
+        padding: 3rem 3rem 2.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      .max-w-7xl {
+        max-width: 80rem;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .max-w-lg {
+        max-width: 32rem;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .drop-zone {
+        border: 2px dashed #cbd5e1;
+        background: #f8fafc;
+        border-radius: 14px;
+        transition: border-color 0.2s ease, background-color 0.2s ease;
+        padding: 2.5rem;
+        cursor: pointer;
+      }
+      .drop-zone:focus-visible {
+        outline: 3px solid var(--color-primary);
+        outline-offset: 3px;
+      }
+      .drop-zone:hover {
+        border-color: var(--color-primary);
+        background: var(--color-primary-soft);
+      }
+      .bg-slate-50 {
+        background: #f8fafc;
+      }
+      .rounded-xl {
+        border-radius: 14px;
+      }
+      .mb-4 {
+        margin-bottom: 1rem;
+      }
+      .mt-2 {
+        margin-top: 0.5rem;
+      }
+      .mt-6 {
+        margin-top: 1.5rem;
+      }
+      .drop-icon {
+        width: 64px;
+        height: 64px;
+        display: block;
+        margin: 0 auto 1rem;
+        color: #cbd5e1;
+        transition: transform 0.2s ease, color 0.2s ease;
+      }
+      .drop-zone:hover .drop-icon {
+        color: var(--color-primary);
+        transform: translateY(-4px);
+      }
+      .text-center {
+        text-align: center;
+      }
+      .text-lg {
+        font-size: 1.125rem;
+        line-height: 1.4;
+      }
+      .text-xs {
+        font-size: 0.75rem;
+      }
+      .text-slate-600 {
+        color: #475569;
+      }
+      .text-slate-400 {
+        color: #94a3b8;
+      }
+      .text-primary {
+        color: var(--color-primary-strong);
+      }
+      .font-medium {
+        font-weight: 600;
+      }
+      .font-bold {
+        font-weight: 700;
+      }
+      .underline {
+        text-decoration: underline;
+      }
+    </style>
   </head>
 
   <body class="text-slate-800">
@@ -259,6 +478,7 @@
                   role="button"
                   tabindex="0"
                   aria-label="Subir archivos CSV"
+                  aria-describedby="dropZoneTitle dropZoneHelp"
                 >
                   <input
                     type="file"
@@ -268,15 +488,35 @@
                     class="hidden"
                   />
                   <div class="relative z-10">
-                    <i
-                      class="fa-solid fa-cloud-arrow-up text-5xl text-slate-300 mb-4 group-hover:text-primary transition transform group-hover:-translate-y-1"
-                    ></i>
+                    <svg
+                      class="drop-icon"
+                      viewBox="0 0 64 64"
+                      role="presentation"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M45.3 27.1a13 13 0 0 0-25-4.1A10.7 10.7 0 0 0 11 33.5 10.5 10.5 0 0 0 21.5 44H39a10.5 10.5 0 0 0 6.3-18.9Z"
+                        opacity=".35"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M32 16a2 2 0 0 0-2 2v15.6l-3.3-3.3a2 2 0 0 0-2.8 2.8l6.8 6.7a2 2 0 0 0 2.8 0l6.8-6.7a2 2 0 0 0-2.8-2.8L34 33.6V18a2 2 0 0 0-2-2Z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M44 46a2 2 0 0 0 0-4H20a2 2 0 0 0 0 4Z"
+                        opacity=".65"
+                      />
+                    </svg>
                     <p
+                      id="dropZoneTitle"
                       class="text-lg font-medium text-slate-600 group-hover:text-primary"
                     >
                       Arrastra o haz clic para subir
                     </p>
-                    <p class="text-xs text-slate-400 mt-2">
+                    <p id="dropZoneHelp" class="text-xs text-slate-400 mt-2">
                       Soporta uno o varios CSV
                     </p>
                   </div>
