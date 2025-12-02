@@ -76,7 +76,8 @@ body {
   padding: 0 var(--app-bar-padding-x);
   display: flex;
   align-items: center;
-  transition: min-height 0.18s ease, padding 0.18s ease;
+  transition: transform 0.18s ease;
+  will-change: transform;
 }
 
 .app-brand {
