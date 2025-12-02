@@ -74,6 +74,18 @@ export const cViewsRangeV30Ticks = (rangeBarMetric, rangeStats = []) => ({
     const scaleX = chart.scales.x;
     const activeScale = chart.scales.y;
     if (!scaleX || !activeScale) return;
+    const barDataset = chart.data.datasets.find(
+      (dataset) => dataset?.yAxisID === "y" && Array.isArray(dataset.data),
+    );
+    const getValueForIndex = (index) => {
+      const fromDataset = barDataset?.data?.[index];
+      if (Number.isFinite(fromDataset)) return fromDataset;
+      const fromStats =
+        rangeBarMetric === "views"
+          ? rangeStats[index]?.avgViews
+          : rangeStats[index]?.avgV30;
+      return Number.isFinite(fromStats) ? fromStats : null;
+    };
     const area = chart.chartArea;
     const chartCtx = chart.ctx;
     chartCtx.save();
@@ -81,16 +93,13 @@ export const cViewsRangeV30Ticks = (rangeBarMetric, rangeStats = []) => ({
     chartCtx.fillStyle = "#0f172a";
     chartCtx.textAlign = "center";
     chartCtx.textBaseline = "top";
-    const topY = area.top + 10;
+    const bottomY = (scaleX.bottom || area.bottom) + 8;
     scaleX.ticks.forEach((_, index) => {
-      const value =
-        rangeBarMetric === "views"
-          ? rangeStats[index]?.avgViews
-          : rangeStats[index]?.avgV30;
+      const value = getValueForIndex(index);
       if (value === null || value === undefined) return;
       const x = scaleX.getPixelForTick(index);
       const xClamped = Math.min(area.right - 8, Math.max(area.left + 8, x));
-      chartCtx.fillText(fmtViews(value), xClamped, topY);
+      chartCtx.fillText(fmtViews(value), xClamped, bottomY);
     });
     chartCtx.restore();
   },

@@ -29,14 +29,12 @@ const V30_LABEL_PROM = `${V30_LABEL} Prom`;
 const V30_LABEL_PROMEDIO = `${V30_LABEL} Promedio`;
 const V30_LABEL_PROM_LOWER = `${V30_LABEL} promedio`;
 const DURATION_STACK_COLORS = [
-  "#e2e8ff",
-  "#c7d2fe",
-  "#a5b4fc",
-  "#818cf8",
-  "#6366f1",
-  "#4f46e5",
-  "#4338ca",
-  "#312e81",
+  "#3b82f6", // azul
+  "#10b981", // verde
+  "#facc15", // amarillo
+  "#f97316", // naranja
+  "#ef4444", // rojo
+  "#8b5cf6", // violeta
 ];
 const CONFIG_DURATION_RANGES = appConfig.DURATION_RANGES || [];
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -288,7 +286,7 @@ export function renderCharts() {
       animation: false,
       responsiveAnimationDuration: 0,
       maintainAspectRatio: false,
-      layout: { padding: { top: 12, bottom: 32, right: 18 } },
+      layout: { padding: { top: 12, bottom: 42, right: 18 } },
       plugins: {
         legend: { display: true, position: "top" },
         tooltip: {
@@ -319,9 +317,7 @@ export function renderCharts() {
                 : V30_LABEL_PROM_LOWER,
           },
           ticks: { callback: (value) => fmtAxisViews(value) },
-          suggestedMax:
-            rangeBarMetric === "views" ? maxViewsAvg * 1.3 : maxV30 * 1.3,
-          grace: "20%",
+          beginAtZero: true,
           afterFit: (scale) => {
             scale.width = appConfig.Y_AXIS_WIDTH || 75;
           },
@@ -334,8 +330,7 @@ export function renderCharts() {
             precision: 0,
             callback: (value) => (Number.isInteger(value) ? value : ""),
           },
-          suggestedMax: maxCount * 1.15,
-          grace: "15%",
+          beginAtZero: true,
           afterFit: (scale) => {
             scale.width = appConfig.Y_AXIS_WIDTH || 75;
           },

@@ -983,6 +983,15 @@
           const scaleX = chart.scales.x;
           const activeScale = chart.scales.y;
           if (!scaleX || !activeScale) return;
+          const barDataset = chart.data.datasets.find(
+            (dataset) => (dataset == null ? void 0 : dataset.yAxisID) === "y" && Array.isArray(dataset.data)
+          );
+          const getValueForIndex = (index) => {
+            const fromDataset = barDataset?.data?.[index];
+            if (Number.isFinite(fromDataset)) return fromDataset;
+            const fromStats = rangeBarMetric === "views" ? rangeStats[index]?.avgViews : rangeStats[index]?.avgV30;
+            return Number.isFinite(fromStats) ? fromStats : null;
+          };
           const area = chart.chartArea;
           const chartCtx = chart.ctx;
           chartCtx.save();
@@ -990,17 +999,17 @@
           chartCtx.fillStyle = "#0f172a";
           chartCtx.textAlign = "center";
           chartCtx.textBaseline = "top";
-          const topY = area.top + 10;
+          const bottomY = (scaleX.bottom || area.bottom) + 8;
           scaleX.ticks.forEach((_, index) => {
-            const value = rangeBarMetric === "views" ? rangeStats[index]?.avgViews : rangeStats[index]?.avgV30;
+            const value = getValueForIndex(index);
             if (value === null || value === void 0) return;
             const x = scaleX.getPixelForTick(index);
             const xClamped = Math.min(area.right - 8, Math.max(area.left + 8, x));
-            chartCtx.fillText(fmtViews(value), xClamped, topY);
+            chartCtx.fillText(fmtViews(value), xClamped, bottomY);
           });
           chartCtx.restore();
-        }
-      });
+      }
+    });
     }
   });
 
@@ -1197,7 +1206,7 @@
         animation: false,
         responsiveAnimationDuration: 0,
         maintainAspectRatio: false,
-        layout: { padding: { top: 12, bottom: 32, right: 18 } },
+        layout: { padding: { top: 12, bottom: 42, right: 18 } },
         plugins: {
           legend: { display: true, position: "top" },
           tooltip: {
@@ -1224,8 +1233,7 @@
               text: rangeBarMetric === "views" ? "Views promedio" : V30_LABEL_PROM_LOWER
             },
             ticks: { callback: (value) => fmtAxisViews(value) },
-            suggestedMax: rangeBarMetric === "views" ? maxViewsAvg * 1.3 : maxV30 * 1.3,
-            grace: "20%",
+            beginAtZero: true,
             afterFit: (scale) => {
               scale.width = appConfig3.Y_AXIS_WIDTH || 75;
             }
@@ -1238,8 +1246,7 @@
               precision: 0,
               callback: (value) => Number.isInteger(value) ? value : ""
             },
-            suggestedMax: maxCount * 1.15,
-            grace: "15%",
+            beginAtZero: true,
             afterFit: (scale) => {
               scale.width = appConfig3.Y_AXIS_WIDTH || 75;
             }
@@ -1508,14 +1515,12 @@
       V30_LABEL_PROMEDIO = `${V30_LABEL} Promedio`;
       V30_LABEL_PROM_LOWER = `${V30_LABEL} promedio`;
       DURATION_STACK_COLORS = [
-        "#0ea5e9",
-        "#22c55e",
-        "#ef4444",
+        "#3b82f6",
+        "#10b981",
+        "#facc15",
         "#f97316",
-        "#a855f7",
-        "#14b8a6",
-        "#eab308",
-        "#6366f1"
+        "#ef4444",
+        "#8b5cf6"
       ];
       CONFIG_DURATION_RANGES = appConfig3.DURATION_RANGES || [];
       MS_PER_DAY = 1e3 * 60 * 60 * 24;
