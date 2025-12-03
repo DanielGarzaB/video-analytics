@@ -37,8 +37,8 @@ const DURATION_STACK_COLORS = [
   "#8b5cf6", // violeta
 ];
 const CONFIG_DURATION_RANGES = appConfig.DURATION_RANGES || [];
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const RECENT_DAYS_IGNORE = 14;
+const MS_PER_DAY = appConfig.MS_PER_DAY || 86400000;
+const RECENT_DAYS_IGNORE = appConfig.RECENT_DAYS_IGNORE || 14;
 
 const appState = typeof window !== "undefined" ? window.State : null;
 const byId = (id) =>
@@ -135,8 +135,14 @@ export function renderCharts() {
   });
   if (chart1IsLine && !chart1IsStacked) {
     chart1Options.elements = {
-      line: { tension: 0, borderWidth: 3 },
-      point: { radius: 4, hoverRadius: 6 },
+      line: {
+        tension: appConfig.CHART_LINE_TENSION || 0,
+        borderWidth: appConfig.CHART_LINE_BORDER_WIDTH || 3
+      },
+      point: {
+        radius: appConfig.CHART_POINT_RADIUS_SMALL || 4,
+        hoverRadius: appConfig.CHART_POINT_HOVER_RADIUS_SMALL || 6
+      },
     };
     chart1Options.interaction = { mode: "index", intersect: false };
   }
@@ -148,14 +154,14 @@ export function renderCharts() {
     chart1Options.plugins.legend.align = "center";
     chart1Options.plugins.legend.labels = {
       usePointStyle: true,
-      boxWidth: 12,
-      padding: 12,
+      boxWidth: appConfig.CHART_LEGEND_BOX_WIDTH || 12,
+      padding: appConfig.CHART_LEGEND_PADDING || 12,
     };
     chart1Options.layout = chart1Options.layout || {};
     const basePadding = chart1Options.layout.padding || {};
     chart1Options.layout.padding = {
       ...basePadding,
-      bottom: Math.max(basePadding.bottom || 0, 16),
+      bottom: Math.max(basePadding.bottom || 0, appConfig.CHART_PADDING_BOTTOM || 16),
     };
     chart1Options.scales = chart1Options.scales || {};
     chart1Options.scales.x = { ...(chart1Options.scales.x || {}), stacked: true };
@@ -174,10 +180,10 @@ export function renderCharts() {
           DURATION_STACK_COLORS[index % DURATION_STACK_COLORS.length],
         borderColor:
           DURATION_STACK_COLORS[index % DURATION_STACK_COLORS.length],
-        borderWidth: 1,
+        borderWidth: appConfig.CHART_BAR_BORDER_WIDTH || 1,
         stack: "minutes",
-        barPercentage: 0.86,
-        categoryPercentage: 0.82,
+        barPercentage: appConfig.CHART_BAR_PERCENTAGE || 0.86,
+        categoryPercentage: appConfig.CHART_CATEGORY_PERCENTAGE || 0.82,
       }))
     : [
         {
@@ -185,16 +191,16 @@ export function renderCharts() {
           data: chart1Series,
           backgroundColor: CHART_COLORS.primary,
           borderColor: CHART_COLORS.primary,
-          borderRadius: chart1IsLine ? 0 : 3,
-          borderWidth: chart1IsLine ? 3 : 0,
+          borderRadius: chart1IsLine ? 0 : (appConfig.CHART_BAR_BORDER_RADIUS || 3),
+          borderWidth: chart1IsLine ? (appConfig.CHART_LINE_BORDER_WIDTH || 3) : 0,
           fill: false,
           pointBackgroundColor: CHART_COLORS.primary,
           pointBorderColor: "#ffffff",
-          pointBorderWidth: chart1IsLine ? 2 : 0,
-          pointRadius: chart1IsLine ? 5 : 0,
-          pointHoverRadius: chart1IsLine ? 7 : 0,
-          tension: 0,
-          order: 1,
+          pointBorderWidth: chart1IsLine ? (appConfig.CHART_POINT_BORDER_WIDTH || 2) : 0,
+          pointRadius: chart1IsLine ? (appConfig.CHART_POINT_RADIUS || 5) : 0,
+          pointHoverRadius: chart1IsLine ? (appConfig.CHART_POINT_HOVER_RADIUS || 7) : 0,
+          tension: appConfig.CHART_LINE_TENSION || 0,
+          order: appConfig.CHART_ORDER_BACKGROUND || 1,
         },
       ];
 
@@ -262,9 +268,9 @@ export function renderCharts() {
             rangeBarMetric === "views"
               ? CHART_COLORS.successAlt
               : "rgba(37, 99, 235, 0.9)",
-          borderRadius: 6,
-          barPercentage: 0.82,
-          categoryPercentage: 0.78,
+          borderRadius: appConfig.CHART_BAR_BORDER_RADIUS_XLARGE || 6,
+          barPercentage: appConfig.CHART_BAR_PERCENTAGE_NARROW || 0.82,
+          categoryPercentage: appConfig.CHART_CATEGORY_PERCENTAGE_NARROW || 0.78,
           yAxisID: "y",
           order: 1,
         },
@@ -274,16 +280,16 @@ export function renderCharts() {
           data: rangeStats.map((range) => range.count),
           borderColor: CHART_COLORS.purple,
           backgroundColor: CHART_COLORS.purple,
-          borderWidth: 3,
-          tension: 0,
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          pointBorderWidth: 2.4,
+          borderWidth: appConfig.CHART_LINE_BORDER_WIDTH || 3,
+          tension: appConfig.CHART_LINE_TENSION || 0,
+          pointRadius: appConfig.CHART_SCATTER_HOVER_RADIUS || 6,
+          pointHoverRadius: appConfig.CHART_POINT_HOVER_RADIUS_SMALL || 8,
+          pointBorderWidth: appConfig.CHART_POINT_BORDER_WIDTH_THICK || 2.4,
           pointBorderColor: "#ffffff",
           pointBackgroundColor: CHART_COLORS.purple,
-          pointHitRadius: 10,
-          order: 99,
-          z: 10,
+          pointHitRadius: appConfig.CHART_POINT_HIT_RADIUS || 10,
+          order: appConfig.CHART_ORDER_FOREGROUND || 99,
+          z: appConfig.Z_INDEX_CHART_TOP || 10,
           clip: false,
           segment: { borderJoinStyle: "round" },
           yAxisID: "yCount",
@@ -295,13 +301,23 @@ export function renderCharts() {
       animation: false,
       responsiveAnimationDuration: 0,
       maintainAspectRatio: false,
-    layout: { padding: { top: 12, bottom: 42, right: 18 } },
+    layout: {
+      padding: {
+        top: appConfig.CHART_PADDING_TOP || 12,
+        bottom: appConfig.CHART_PADDING_BOTTOM_LARGE || 42,
+        right: appConfig.CHART_PADDING_RIGHT || 18
+      }
+    },
     plugins: {
       legend: {
         display: true,
         position: "bottom",
         align: "center",
-        labels: { usePointStyle: true, boxWidth: 12, padding: 12 },
+        labels: {
+          usePointStyle: true,
+          boxWidth: appConfig.CHART_LEGEND_BOX_WIDTH || 12,
+          padding: appConfig.CHART_LEGEND_PADDING || 12
+        },
       },
       tooltip: {
         callbacks: {
@@ -365,8 +381,14 @@ export function renderCharts() {
   });
   if (chart2IsLine) {
     chart2Options.elements = {
-      line: { tension: 0, borderWidth: 3 },
-      point: { radius: 4, hoverRadius: 6 },
+      line: {
+        tension: appConfig.CHART_LINE_TENSION || 0,
+        borderWidth: appConfig.CHART_LINE_BORDER_WIDTH || 3
+      },
+      point: {
+        radius: appConfig.CHART_POINT_RADIUS_SMALL || 4,
+        hoverRadius: appConfig.CHART_POINT_HOVER_RADIUS_SMALL || 6
+      },
     };
     chart2Options.interaction = { mode: "index", intersect: false };
   }
@@ -380,14 +402,14 @@ export function renderCharts() {
           data: keys.map((key) => grouped[key].vSum),
           backgroundColor: CHART_COLORS.success,
           borderColor: CHART_COLORS.successAlt,
-          borderRadius: chart2IsLine ? 0 : 3,
-          borderWidth: chart2IsLine ? 3 : 0,
+          borderRadius: chart2IsLine ? 0 : (appConfig.CHART_BAR_BORDER_RADIUS || 3),
+          borderWidth: chart2IsLine ? (appConfig.CHART_LINE_BORDER_WIDTH || 3) : 0,
           pointBackgroundColor: CHART_COLORS.success,
           pointBorderColor: "#ffffff",
-          pointRadius: chart2IsLine ? 5 : 0,
-          pointHoverRadius: chart2IsLine ? 7 : 0,
+          pointRadius: chart2IsLine ? (appConfig.CHART_POINT_RADIUS || 5) : 0,
+          pointHoverRadius: chart2IsLine ? (appConfig.CHART_POINT_HOVER_RADIUS || 7) : 0,
           fill: false,
-          tension: 0,
+          tension: appConfig.CHART_LINE_TENSION || 0,
         },
       ],
     },
@@ -449,20 +471,20 @@ export function renderCharts() {
           type: "scatter",
           backgroundColor: "rgba(99, 102, 241, 0.35)",
           borderColor: CHART_COLORS.primary,
-          borderWidth: 0.6,
-          hoverBorderWidth: 1,
-          radius: 3.5,
-          order: 1,
+          borderWidth: appConfig.CHART_SCATTER_DUR_BORDER_WIDTH || 0.6,
+          hoverBorderWidth: appConfig.CHART_SCATTER_DUR_HOVER_BORDER_WIDTH || 1,
+          radius: appConfig.CHART_SCATTER_DUR_RADIUS || 3.5,
+          order: appConfig.CHART_ORDER_BACKGROUND || 1,
         },
         {
           label: `Media Movil (${MA_WINDOW}d)`,
           data: lineDur,
           borderColor: CHART_COLORS.orange,
-          borderWidth: 3.2,
+          borderWidth: appConfig.CHART_LINE_BORDER_WIDTH_THICK || 3.2,
           pointRadius: 0,
-          tension: 0.3,
-          order: 99,
-          z: 10,
+          tension: appConfig.CHART_LINE_TENSION_SMOOTH || 0.3,
+          order: appConfig.CHART_ORDER_FOREGROUND || 99,
+          z: appConfig.Z_INDEX_CHART_TOP || 10,
         },
       ],
     },
@@ -480,8 +502,14 @@ export function renderCharts() {
   }
   if (chart3IsLine) {
     chart3Options.elements = {
-      line: { tension: 0, borderWidth: 3 },
-      point: { radius: 4, hoverRadius: 6 },
+      line: {
+        tension: appConfig.CHART_LINE_TENSION || 0,
+        borderWidth: appConfig.CHART_LINE_BORDER_WIDTH || 3
+      },
+      point: {
+        radius: appConfig.CHART_POINT_RADIUS_SMALL || 4,
+        hoverRadius: appConfig.CHART_POINT_HOVER_RADIUS_SMALL || 6
+      },
     };
     chart3Options.interaction = { mode: "index", intersect: false };
   }
@@ -507,20 +535,20 @@ export function renderCharts() {
             chart4Metric === "views"
               ? CHART_COLORS.primary
               : CHART_COLORS.v30,
-          borderRadius: chart3IsLine ? 0 : 4,
-          borderWidth: chart3IsLine ? 3 : 0,
-          pointBorderWidth: chart3IsLine ? 2 : 0,
+          borderRadius: chart3IsLine ? 0 : (appConfig.CHART_BAR_BORDER_RADIUS_LARGE || 4),
+          borderWidth: chart3IsLine ? (appConfig.CHART_LINE_BORDER_WIDTH || 3) : 0,
+          pointBorderWidth: chart3IsLine ? (appConfig.CHART_POINT_BORDER_WIDTH || 2) : 0,
           pointBackgroundColor:
             chart4Metric === "views"
               ? CHART_COLORS.primary
               : CHART_COLORS.v30,
           pointBorderColor: "#ffffff",
-          pointRadius: chart3IsLine ? 5 : 0,
-          pointHoverRadius: chart3IsLine ? 7 : 0,
+          pointRadius: chart3IsLine ? (appConfig.CHART_POINT_RADIUS || 5) : 0,
+          pointHoverRadius: chart3IsLine ? (appConfig.CHART_POINT_HOVER_RADIUS || 7) : 0,
           fill: false,
-          tension: 0,
+          tension: appConfig.CHART_LINE_TENSION || 0,
           yAxisID: "y",
-          order: 1,
+          order: appConfig.CHART_ORDER_BACKGROUND || 1,
         },
       ],
     },
@@ -568,10 +596,10 @@ export function renderCharts() {
           data: scatterDataset,
           backgroundColor: CHART_COLORS.scatterBg,
           borderColor: CHART_COLORS.scatter,
-          borderWidth: 0.9,
-          hoverBorderWidth: 1.2,
-          radius: 4,
-          hoverRadius: 6,
+          borderWidth: appConfig.CHART_SCATTER_BORDER_WIDTH || 0.9,
+          hoverBorderWidth: appConfig.CHART_SCATTER_HOVER_BORDER_WIDTH || 1.2,
+          radius: appConfig.CHART_SCATTER_RADIUS || 4,
+          hoverRadius: appConfig.CHART_SCATTER_HOVER_RADIUS || 6,
         },
       ],
     },
@@ -580,16 +608,18 @@ export function renderCharts() {
       maintainAspectRatio: false,
       animation: false,
       responsiveAnimationDuration: 0,
-      layout: { padding: { right: 18 } },
+      layout: { padding: { right: appConfig.CHART_PADDING_RIGHT || 18 } },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
             label: (context) => {
               const raw = context.raw || {};
+              const maxLength = appConfig.TOOLTIP_TITLE_MAX_LENGTH || 45;
+              const truncateAt = appConfig.TOOLTIP_TITLE_TRUNCATE_AT || 42;
               const title = raw.title
-                ? raw.title.length > 45
-                  ? `${raw.title.substring(0, 42)}...`
+                ? raw.title.length > maxLength
+                  ? `${raw.title.substring(0, truncateAt)}...`
                   : raw.title
                 : "Video";
               const value = context.parsed?.y || 0;

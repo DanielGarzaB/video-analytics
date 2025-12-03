@@ -39,8 +39,8 @@ const DUR_STEP = appConfig.DUR_STEP || 1;
 const PILL_ACTIVE =
   "bg-white text-primary-darker shadow-sm border border-primary-soft";
 const PILL_INACTIVE = "text-primary-dark hover:text-primary-darker";
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const MAX_RANGE_DAYS = 31;
+const MS_PER_DAY = appConfig.MS_PER_DAY || 86400000;
+const MAX_RANGE_DAYS = appConfig.MAX_RANGE_DAYS || 31;
 
 const PLATFORM_COLUMNS = [
   { key: "facebook", label: "Facebook" },
@@ -337,7 +337,7 @@ function updateDurationRangePreview() {
 
 const scheduleRangeChartRender = (() => {
   let timer = null;
-  return (delay = 320) => {
+  return (delay = appConfig.DEBOUNCE_DELAY_CHART_RENDER || 320) => {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
@@ -666,7 +666,7 @@ function applyFilters() {
 
 const scheduleApplyFilters = (() => {
   let pending = null;
-  return (delay = 300) => {
+  return (delay = appConfig.DEBOUNCE_DELAY_DEFAULT || 300) => {
     if (pending) clearTimeout(pending);
     pending = setTimeout(() => {
       pending = null;
@@ -1155,12 +1155,12 @@ function bindPlatformChips() {
       ).length;
       if (isActive && activeCount <= 1) {
         chip.classList.add("pulse-once");
-        setTimeout(() => chip.classList.remove("pulse-once"), 220);
+        setTimeout(() => chip.classList.remove("pulse-once"), appConfig.PULSE_ANIMATION_DURATION || 220);
         return;
       }
       chip.classList.toggle("is-active");
       chip.setAttribute("aria-pressed", chip.classList.contains("is-active"));
-      scheduleApplyFilters(120);
+      scheduleApplyFilters(appConfig.DEBOUNCE_DELAY_FAST || 120);
     });
   });
 }

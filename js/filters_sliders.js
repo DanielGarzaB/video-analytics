@@ -1,4 +1,4 @@
-import { CHART_COLORS } from "./config.js";
+import { CHART_COLORS, CONFIG } from "./config.js";
 
 const byId = (id) => document.getElementById(id);
 
@@ -30,11 +30,11 @@ export function createRangeController(config) {
   const setFocus = (which) => {
     if (!minRange || !maxRange) return;
     if (which === "min") {
-      minRange.style.zIndex = 40;
-      maxRange.style.zIndex = 20;
+      minRange.style.zIndex = CONFIG.Z_INDEX_SLIDER_FOCUS;
+      maxRange.style.zIndex = CONFIG.Z_INDEX_SLIDER_INACTIVE;
     } else {
-      maxRange.style.zIndex = 40;
-      minRange.style.zIndex = 20;
+      maxRange.style.zIndex = CONFIG.Z_INDEX_SLIDER_FOCUS;
+      minRange.style.zIndex = CONFIG.Z_INDEX_SLIDER_INACTIVE;
     }
   };
 

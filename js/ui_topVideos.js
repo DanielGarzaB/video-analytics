@@ -71,8 +71,8 @@ export function ensureThumbObserver(rootEl) {
     },
     {
       root: thumbObserverRoot,
-      rootMargin: "48px 0px",
-      threshold: 0.01,
+      rootMargin: appConfig.OBSERVER_ROOT_MARGIN || "48px 0px",
+      threshold: appConfig.OBSERVER_THRESHOLD || 0.01,
     },
   );
   return thumbObserver;
@@ -117,7 +117,7 @@ export function forceLoadAllThumbs() {
           }),
       ),
     ),
-    new Promise((resolve) => setTimeout(resolve, 1200)),
+    new Promise((resolve) => setTimeout(resolve, appConfig.THUMB_LOAD_TIMEOUT || 1200)),
   ]);
 }
 

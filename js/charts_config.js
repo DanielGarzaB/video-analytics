@@ -14,7 +14,7 @@ export function commonOpt(scaleX, scaleY) {
     maintainAspectRatio: false,
     animation: false,
     resizeDelay: 0,
-    layout: { padding: { right: 18 } },
+    layout: { padding: { right: appConfig.CHART_PADDING_RIGHT || 18 } },
     plugins: { legend: { display: false } },
     scales: {
       x: scaleX || {},
@@ -38,22 +38,28 @@ export function timeScatterOpt(yLabel) {
     maintainAspectRatio: false,
     animation: false,
     responsiveAnimationDuration: 0,
-    layout: { padding: { right: 18 } },
+    layout: { padding: { right: appConfig.CHART_PADDING_RIGHT || 18 } },
     plugins: {
       legend: {
         display: true,
         position: "bottom",
         align: "center",
-        labels: { usePointStyle: true, boxWidth: 12, padding: 12 },
+        labels: {
+          usePointStyle: true,
+          boxWidth: appConfig.CHART_LEGEND_BOX_WIDTH || 12,
+          padding: appConfig.CHART_LEGEND_PADDING || 12
+        },
       },
       tooltip: {
         callbacks: {
           label: (context) => {
             const raw = context.raw || {};
             const fullTitle = raw.title || context.dataset?.label || "Dato";
+            const maxLength = appConfig.TOOLTIP_LABEL_MAX_LENGTH || 30;
+            const truncateAt = appConfig.TOOLTIP_LABEL_TRUNCATE_AT || 27;
             const title =
-              fullTitle.length > 30
-                ? `${fullTitle.substring(0, 27)}...`
+              fullTitle.length > maxLength
+                ? `${fullTitle.substring(0, truncateAt)}...`
                 : fullTitle;
             const yVal = raw.y ?? context.parsed?.y ?? 0;
             return `${title} (${fmtDur(yVal)})`;
