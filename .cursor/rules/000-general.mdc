@@ -1,0 +1,17 @@
+---
+description: Stack y principios generales para video-analytics
+globs: *
+---
+# Stack
+- Lenguaje: Vanilla JavaScript (ES6 modules).
+- Visualizacion: Chart.js con configuraciones propias.
+- Testing: Jest con babel-jest (ver jest.config.cjs).
+- Estilos: CSS nativo en styles.css.
+
+# Principios
+- KISS: prioriza legibilidad y funciones puras sobre trucos.
+- Flujo directo en main: commits atomicos y descriptivos, sin ramas de PR.
+- Documenta con JSDoc en funciones que procesan datos o tienen firmas no triviales.
+- Archivos generados: `js/app.bundle.js` se considera artefacto de build; no editar a mano.
+- Entry de bundle: `js/bundle-entry.js` sirve para empaquetar con esbuild/archivo IIFE cuando se necesite abrir por file://.
+- Comandos base: `npm test` corre Jest; no hay comando de build obligatorio en package.json.

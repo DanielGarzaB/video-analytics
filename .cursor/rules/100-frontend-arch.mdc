@@ -1,0 +1,15 @@
+---
+description: Arquitectura frontend y separacion de responsabilidades
+globs: js/*.js
+---
+# Separacion de intereses
+- State unico: `js/state.js` expone `window.State` como fuente de verdad para datos filtrados, modos de grafico y referencias a instancias de Chart. Crear/destruir charts siempre via `State.setChart` y `State.clearChart`.
+- Logica de datos: `js/data_normalize.js`, `js/utils_parsers.js`, `js/utils_formatters.js` deben ser funciones puras sin tocar DOM ni `window`. Transforman datos crudos a estructuras consumibles.
+- Config y render: `js/charts_config.js`, `js/charts_plugins.js` definen opciones; `js/charts_render.js` pinta en el DOM y usa las opciones previas. Cambios de look van aqui, no en la capa de datos.
+- UI y filtros: `js/filters_sliders.js`, `js/filters_toggles.js`, `js/ui_topVideos.js` solo orquestan interaccion y actualizan renderizado leyendo/escribiendo en `State`.
+- Orquestador: `js/app.js` conecta carga de datos, normalizacion, actualizacion de `State` y disparo de render segun filtros.
+
+# Reglas de oro
+- Si el cambio altera que datos se muestran, modificar `data_normalize.js` o `utils_parsers.js`.
+- Si el cambio altera como se ve un grafico, modificar `charts_config.js` o `charts_render.js`.
+- Evitar variables globales sueltas: leer y escribir siempre en `State`.

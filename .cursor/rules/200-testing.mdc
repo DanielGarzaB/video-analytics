@@ -1,0 +1,15 @@
+---
+description: Estandares de testing con Jest
+globs: "*.test.js", "jest.config.cjs"
+---
+# Cobertura prioritaria
+- Probar funciones puras primero: `normalizeRows`, `groupData`, `parseNumberInput`, `parseDurationText`, formatters.
+- Usar fixtures pequenos (ej. `__tests__/fixtures/*.json`) para cubrir casos edge de columnas faltantes, valores null o tokens invalidos.
+
+# Mocks y entorno
+- Mockear `window.Chart` y el DOM al probar render; no intentar instanciar canvas real.
+- No tocar `State` global en tests de datos; mantenerlos puros.
+
+# Estilo
+- Agrupar por modulo con `describe`; cada comportamiento con `test`/`it`.
+- Validar regresiones comunes: ordenamiento por periodo (`getSortValue`), agregados de `groupData`, y limpieza de cadenas/metricas.
