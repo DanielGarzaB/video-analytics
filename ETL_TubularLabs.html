@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Guia practica ETL TubLab</title>
+  <title>Guia practica ETL Tubular Labs</title>
   <style>
     :root {
       --bg: #f6f7fb;
@@ -236,31 +236,11 @@
   </style>
 </head>
 <body>
-  <main id="main-content" role="main">
-    <div class="page">
-      <article class="doc">
+  <div class="page">
+    <article class="doc">
       <section class="hero">
-        <div class="pill-row">
-          <span class="pill neutral">TubLab</span>
-          <span class="pill neutral">Video Gallery</span>
-          <span class="pill success">CSV listo</span>
-        </div>
-        <h1 id="guia-practica-extraer-datos-de-tublab-video-gallery">🎬 Guia practica: extraer datos de TubLab (Video Gallery)</h1>
-        <p class="lede">Objetivo: automatizar los clics en "Load more" y exportar la tabla de Video Gallery a CSV con: <code>video</code>, <code>creator_name</code>, <code>video_url</code>, <code>image_url</code>, <code>upload_date</code>, <code>views</code>, <code>v30</code>, <code>duration</code>, <code>platform</code> + columnas normalizadas (<code>views_num</code>, <code>v30_num</code>, <code>duration_sec</code>).</p>
-        <div class="hero-meta">
-          <div class="meta-card">
-            <div class="label">Salida</div>
-            <div class="value">CSV + portapapeles</div>
-          </div>
-          <div class="meta-card">
-            <div class="label">Metricas</div>
-            <div class="value">views_num | v30_num | duration_sec</div>
-          </div>
-          <div class="meta-card">
-            <div class="label">Carga</div>
-            <div class="value">Auto "Load more" (max 500 clics)</div>
-          </div>
-        </div>
+        <h1 id="extraer-datos-de-tublab-video-gallery">🎬 Extraer datos de TubLab - Video Gallery</h1>
+        <p class="lede">Objetivo: automatizar los clics en "Load more" y exportar la tabla de Video Gallery a CSV con: <code>video</code>, <code>Creador</code>, <code>URL</code>, <code>Imagen</code>, <code>fecha</code>, <code>views</code>, <code>v30</code>, <code>duration</code>, <code>plataforma</code>.</p>
       </section>
       <section class="toc-card">
         <h2 id="indice-rapido">Indice rapido</h2>
@@ -306,7 +286,7 @@
 </tr>
 <tr>
 <td>Pagina</td>
-<td>Estar en la vista &quot;Video Gallery&quot; de TubLab</td>
+<td>Estar en la vista &quot;Video Gallery&quot; de Tubular Labs</td>
 </tr>
 </tbody>
 </table>
@@ -363,12 +343,12 @@
 <td><code>promptFileName</code></td>
 <td>boolean</td>
 <td>false</td>
-<td><code>false</code> = nombre auto <code>TubLab_yy_mm_dd_HHmmss.csv</code></td>
+<td><code>false</code> = nombre auto <code>Tubularlabs_yy_mm_dd_HHmmss.csv</code></td>
 </tr>
 <tr>
 <td><code>fileNamePrefix</code></td>
 <td>string</td>
-<td><code>TubLab_Videos</code></td>
+<td><code>Tubular_Videos</code></td>
 <td>Prefijo para el CSV exportado</td>
 </tr>
 </tbody>
@@ -443,7 +423,7 @@
     console.log(&quot;[OK] Script de clic cargado. Escribe: await autoLoadMore();&quot;);
   }
 })();
-</code></pre>
+</code><button type="button" class="copy-btn" aria-label="Copiar Paso 1">Copiar</button></pre>
 <blockquote>
 <p>Si ves <code>undefined</code> en consola despues de pegar el bloque, es normal: es el retorno de la IIFE (no devuelve nada). Si prefieres control manual, pon <code>autoStart: false</code> y luego ejecuta <code>await autoLoadMore();</code>.</p>
 </blockquote>
@@ -453,7 +433,8 @@
   const EXTRACT_CONFIG = {
     normalizeNumbers: true,
     downloadFile: true,
-    fileNamePrefix: &quot;TubLab_Videos&quot;
+    fileNamePrefix: &quot;Tubular_Videos&quot;,
+    autoStart: true // true = ejecuta extractVideos() al pegar; false = manual
   };
 
   const csvEscape = (val) =&gt; '&quot;' + String(val || &quot;&quot;).replace(/&quot;/g, '&quot;&quot;') + '&quot;';
@@ -599,14 +580,19 @@
     return data;
   };
 
-  console.log(&quot;[OK] Script Extractor cargado. Escribe: extractVideos();&quot;);
+  if (EXTRACT_CONFIG.autoStart) {
+    console.log(&quot;[OK] Script Extractor cargado. Ejecutando extractVideos()...&quot;);
+    extractVideos();
+  } else {
+    console.log(&quot;[OK] Script Extractor cargado. Escribe: extractVideos();&quot;);
+  }
 })();
-</code></pre>
+</code><button type="button" class="copy-btn" aria-label="Copiar Paso 2">Copiar</button></pre>
 <hr />
 <p><a id="opcion-b-todo-en-uno"></a></p>
 <h2 id="opcion-b-todo-en-uno-pegar-y-listo">🅱️ Opcion B: todo en uno (pegar y listo)</h2>
 <pre><code class="language-js">(async () =&gt; {
-  console.log(&quot;[START] EXTRACTOR TUBLAB v3.1 - FIXED&quot;);
+  console.log(&quot;[START] EXTRACTOR TUBULAR LABS v3.1 - FIXED&quot;);
   console.log(&quot;=&quot;.repeat(60));
 
   const CONFIG = {
@@ -622,7 +608,7 @@
   const pad = n =&gt; String(n).padStart(2, &quot;0&quot;);
   const generateFileName = () =&gt; {
     const now = new Date();
-    return `TubLab_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
+    return `Tubular_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
   };
   const parseViews = txt =&gt; {
     if (!txt || txt === &quot;--&quot;) return 0;
@@ -830,7 +816,7 @@
 
   return data;
 })();
-</code></pre>
+</code><button type="button" class="copy-btn" aria-label="Copiar Opcion B">Copiar</button></pre>
 <p>Columnas generadas:</p>
 <ul>
 <li>Basicas: <code>video</code>, <code>creator_name</code>, <code>video_url</code>, <code>image_url</code>, <code>upload_date</code>, <code>views</code>, <code>v30</code>, <code>duration</code>, <code>platform</code></li>
@@ -873,7 +859,7 @@
   const titleEl = pinnedRows[0].querySelector('.name, a.link-video-modal, .video-lockup .name');
   console.log(&quot;Titulo (pinned):&quot;, titleEl?.innerText?.trim());
 })();
-</code></pre>
+</code><button type="button" class="copy-btn" aria-label="Copiar Diagnostico">Copiar</button></pre>
 <hr />
 <p><a id="guia-rapida-de-uso"></a></p>
 <h2 id="guia-rapida-de-uso">⚡ Guia rapida de uso</h2>
@@ -881,7 +867,7 @@
 <li>Abre DevTools (F12) -&gt; pestaña Console.</li>
 <li>Escribe <code>allow pasting</code> y Enter.</li>
 <li>Pega el bloque completo (Opcion A o B). Copia solo lo que está dentro del bloque <code>js ... </code>.</li>
-<li>Si usas <strong>Opcion A</strong>: ejecuta <code>await autoLoadMore();</code> y luego <code>extractVideos();</code> (el <code>await</code> es necesario porque la función es async).</li>
+<li>Si usas <strong>Opcion A</strong>: ejecuta <code>await autoLoadMore();</code>. El paso 2 corre solo al pegar (o llama <code>extractVideos();</code> si pusiste <code>autoStart: false</code>).</li>
 <li>Si usas <strong>Opcion B</strong>: con pegar el bloque basta; el script corre solo (ya incluye los <code>await</code> internos).</li>
 </ul>
 <hr />
@@ -895,10 +881,7 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>Sale <code>undefined</code> al pegar</td>
-<td>Ejecuta la funcion: <code>await autoLoadMore();</code> o <code>extractVideos();</code></td>
-</tr>
+<tr><td>Sale <code>undefined</code> al pegar</td><td>Es normal por la IIFE; <code>extractVideos()</code> se ejecuta solo (si quitaste <code>autoStart</code>, ejecutalo manual)</td></tr>
 <tr>
 <td>Error <code>Unexpected identifier 'generadas'</code></td>
 <td>Copia solo el bloque de codigo (entre <code>js ... </code>), sin el texto de la guía</td>
@@ -917,7 +900,7 @@
 </tr>
 <tr>
 <td>Demasiados clics</td>
-<td>Baja <code>maxClicks</code> o usa filtros en TubLab</td>
+<td>Baja <code>maxClicks</code> o usa filtros en Tubular</td>
 </tr>
 <tr>
 <td>Caracteres raros al abrir el CSV en Excel</td>
@@ -934,50 +917,82 @@
 <li>Si cambian el boton de carga, actualiza el selector <code>.button.full-width[ng-click*=&quot;loadMore&quot;]</code> o agrega otro a la lista.</li>
 </ul>
 
-      </article>
-    </div>
-  </main>
+    </article>
+  </div>
   <script>
     (() => {
-      async function copyText(text, btn) {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(text);
-          } else {
-            const area = document.createElement("textarea");
-            area.value = text;
-            document.body.appendChild(area);
-            area.select();
-            document.execCommand("copy");
-            document.body.removeChild(area);
-          }
-          btn.textContent = "Copiado";
-          btn.classList.add("copied");
+      function copyText(text, btn) {
+        const showState = (label, cls = "") => {
+          btn.textContent = label;
+          if (cls) btn.classList.add(cls);
           setTimeout(() => {
             btn.textContent = "Copiar";
             btn.classList.remove("copied");
           }, 1600);
-        } catch (err) {
-          btn.textContent = "Error";
-          console.error("No se pudo copiar", err);
-          setTimeout(() => (btn.textContent = "Copiar"), 1600);
+        };
+
+        const fallbackCopy = () => {
+          try {
+            const area = document.createElement("textarea");
+            area.value = text;
+            area.style.position = "fixed";
+            area.style.top = "-2000px";
+            area.style.left = "-2000px";
+            area.style.opacity = "0";
+            document.body.appendChild(area);
+            area.focus();
+            area.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(area);
+            return ok;
+          } catch (err) {
+            console.error("Fallback copy failed", err);
+            return false;
+          }
+        };
+
+        const isFileProtocol = window.location.protocol === "file:";
+        const hasClipboard = navigator.clipboard && typeof navigator.clipboard.writeText === "function";
+
+        if (isFileProtocol || !hasClipboard) {
+          return fallbackCopy() ? showState("Copiado", "copied") : showState("Error");
         }
+
+        navigator.clipboard.writeText(text).then(
+          () => showState("Copiado", "copied"),
+          (err) => {
+            console.warn("Clipboard API fallo, usando fallback", err);
+            fallbackCopy() ? showState("Copiado", "copied") : showState("Error");
+          }
+        );
+      }
+      function getCodeText(pre) {
+        const code = pre.querySelector("code");
+        return (code ? code.innerText : pre.innerText).replace(/\u00A0/g, " ");
       }
 
       function addCopyButtons() {
-        document.querySelectorAll("pre").forEach((pre, idx) => {
-          if (pre.querySelector(".copy-btn")) return;
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "copy-btn";
-          btn.textContent = "Copiar";
-          btn.setAttribute("aria-label", "Copiar codigo");
-          btn.addEventListener("click", () => {
-            const code = pre.querySelector("code");
-            const text = (code ? code.innerText : pre.innerText).replace(/\u00A0/g, " ");
-            copyText(text, btn);
+        document.querySelectorAll("pre").forEach((pre) => {
+          let btn = pre.querySelector(".copy-btn");
+          if (!btn) {
+            btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "copy-btn";
+            btn.textContent = "Copiar";
+            const label = pre.dataset.copyLabel || "";
+            btn.setAttribute("aria-label", label ? `Copiar ${label}` : "Copiar codigo");
+            pre.appendChild(btn);
+          } else if (!btn.getAttribute("aria-label")) {
+            const label = pre.dataset.copyLabel || "";
+            btn.setAttribute("aria-label", label ? `Copiar ${label}` : "Copiar codigo");
+          }
+
+          if (btn.dataset.bound === "1") return;
+          btn.dataset.bound = "1";
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            copyText(getCodeText(pre), btn);
           });
-          pre.appendChild(btn);
         });
       }
 
@@ -1033,3 +1048,5 @@
   </script>
 </body>
 </html>
+
+
