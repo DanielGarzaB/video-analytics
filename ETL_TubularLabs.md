@@ -1,4 +1,4 @@
-# 🎥 Guia practica: extraer datos de Tubular Labs (Video Gallery)
+# 🎥 Guia practica: extraer datos de TubLab (Video Gallery)
 
 > Objetivo: automatizar los clics en "Load more" y exportar la tabla de Video Gallery a CSV con: `video`, `creator_name`, `video_url`, `image_url`, `upload_date`, `views`, `v30`, `duration`, `platform` + columnas normalizadas (`views_num`, `v30_num`, `duration_sec`).
 
@@ -24,7 +24,7 @@
 | Navegador | Chrome o Edge (Chromium) |
 | Herramienta | DevTools Console (F12 -> Console) |
 | Permiso | Escribir `allow pasting` + Enter antes de pegar codigo |
-| Pagina | Estar en la vista "Video Gallery" de Tubular Labs |
+| Pagina | Estar en la vista "Video Gallery" de TubLab |
 
 ---
 
@@ -39,7 +39,7 @@
 | `finalDelay` | number | 3000 | Espera final antes de leer la tabla |
 | `normalizeNumbers` | boolean | true | Convertir vistas (K/M/B) a numero y duracion a segundos |
 | `downloadFile` | boolean | true | `true` = descarga CSV, `false` = solo portapapeles |
-| `promptFileName` | boolean | false | `false` = nombre auto `Tubularlabs_yy_mm_dd_HHmmss.csv` |
+| `promptFileName` | boolean | false | `false` = nombre auto `TubLab_yy_mm_dd_HHmmss.csv` |
 | `fileNamePrefix` | string | `Tubular_Videos` | Prefijo para el CSV exportado |
 
 ---
@@ -281,7 +281,7 @@
 
 ```js
 (async () => {
-  console.log("[START] EXTRACTOR TUBULAR LABS v3.2");
+  console.log("[START] EXTRACTOR TubLab v3.2");
   console.log("=".repeat(60));
 
   const CONFIG = {
