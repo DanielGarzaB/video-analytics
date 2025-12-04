@@ -437,52 +437,80 @@
     autoStart: true // true = ejecuta extractVideos() al pegar; false = manual
   };
 
-  const csvEscape = (val) =&gt; '&quot;' + String(val || &quot;&quot;).replace(/&quot;/g, '&quot;&quot;') + '&quot;';
-
+  const csvEscape = (val) =&gt; &#x27;&quot;&#x27; + String(val ?? &quot;&quot;).replace(/&quot;/g, &#x27;&quot;&quot;&#x27;) + &#x27;&quot;&#x27;;
   const parseViews = (txt) =&gt; {
     if (!txt || txt === &quot;--&quot;) return 0;
     const t = txt.trim().toUpperCase().replace(/,/g, &quot;&quot;);
     const mult = t.endsWith(&quot;B&quot;) ? 1e9 : t.endsWith(&quot;M&quot;) ? 1e6 : t.endsWith(&quot;K&quot;) ? 1e3 : 1;
     return Math.round(parseFloat(t) * mult) || 0;
   };
-
   const parseDuration = (txt) =&gt; {
     if (!txt || txt === &quot;--&quot;) return 0;
     const parts = txt.split(&quot;:&quot;).map(n =&gt; parseInt(n, 10) || 0);
-    return parts.length === 3 ? parts[0]*3600 + parts[1]*60 + parts[2] : 
-           parts.length === 2 ? parts[0]*60 + parts[1] : parts[0];
+    return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+      : parts.length === 2 ? parts[0] * 60 + parts[1]
+      : parts[0];
+  };
+  const normHeader = (txt) =&gt; txt.toLowerCase().replace(/[^a-z0-9]+/g, &quot; &quot; ).trim();
+  const headerAliases = {
+    upload: [&quot;upload date&quot;, &quot;uploaded&quot;, &quot;published&quot;, &quot;posted&quot;, &quot;video was uploaded&quot;],
+    views: [&quot;views&quot;, &quot;view count&quot;, &quot;video views&quot;],
+    v30: [&quot;v30&quot;, &quot;views 30&quot;, &quot;views (30d)&quot;],
+    duration: [&quot;duration&quot;, &quot;length&quot;, &quot;video duration&quot;],
+    platform: [&quot;platform&quot;, &quot;site&quot;, &quot;network&quot;]
+  };
+
+  const findHeaderRow = (table) =&gt; {
+    const candidates = [
+      ...table.querySelectorAll(&quot;.unified-table-floating-header .unified-table-header-row&quot;),
+      ...table.querySelectorAll(&quot;.unified-table-header-row&quot;)
+    ];
+    return candidates.find(r =&gt; r.innerText.toLowerCase().includes(&quot;views&quot;) ||
+                                r.innerText.toLowerCase().includes(&quot;upload&quot;));
+  };
+
+  const mapHeaders = (headerRow) =&gt; {
+    const headerCells = Array.from(headerRow.querySelectorAll(&quot;.unified-table-cell, .unified-table-header-cell&quot;));
+    const colMap = {};
+    headerCells.forEach((cell, idx) =&gt; {
+      const n = normHeader(cell.innerText);
+      Object.entries(headerAliases).forEach(([key, aliases]) =&gt; {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a =&gt; n === a)) colMap[key] = idx;
+      });
+      Object.entries(headerAliases).forEach(([key, aliases]) =&gt; {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a =&gt; n.startsWith(a))) colMap[key] = idx;
+      });
+    });
+    return colMap;
+  };
+
+  const detectPlatform = (pRow, fallbackText) =&gt; {
+    const iconEl = pRow.querySelector(&#x27;[class*=&quot;platform-identifier&quot;] i&#x27;);
+    let platform = &quot;&quot;;
+    if (iconEl) platform = iconEl.className.replace(/icon-/, &quot;&quot;).replace(/-sign|-play/, &quot;&quot;);
+    else if (fallbackText) platform = fallbackText;
+    return platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : &quot;&quot;;
   };
 
   window.extractVideos = function(customOptions = {}) {
     const opts = { ...EXTRACT_CONFIG, ...customOptions };
-    
-    const table = Array.from(document.querySelectorAll('unified-table')).find(t =&gt; 
-      t.innerText.includes('Upload Date') &amp;&amp; t.innerText.includes('Views')
-    );
-    if (!table) return console.error(&quot;[ERROR] No se encontró la tabla 'Video Gallery'.&quot;);
 
-    const headerRow = table.querySelector('.unified-table-header-row') || 
-                      document.querySelector('.unified-table-header-row'); // Fallback global
-    
-    if (!headerRow) return console.error(&quot;[ERROR] No se encontró la fila de encabezados.&quot;);
-
-    const headerCells = Array.from(headerRow.querySelectorAll('.unified-table-cell'));
-    const colMap = {};
-    
-    headerCells.forEach((cell, idx) =&gt; {
-      const txt = cell.innerText.toLowerCase().trim();
-      if (txt.includes('upload date')) colMap.upload = idx;
-      else if (txt === 'views') colMap.views = idx;
-      else if (txt === 'v30') colMap.v30 = idx;
-      else if (txt === 'duration') colMap.duration = idx;
-      else if (txt === 'platform') colMap.platform = idx;
+    const table = Array.from(document.querySelectorAll(&quot;unified-table&quot;)).find(t =&gt; {
+      const txt = t.innerText.toLowerCase();
+      return txt.includes(&quot;upload date&quot;) &amp;&amp; txt.includes(&quot;views&quot;);
     });
+    if (!table) return console.error(&quot;[ERROR] No se encontro la tabla &#x27;Video Gallery&#x27;.&quot;);
 
-    console.log(&quot;[MAPEO] Mapeo de columnas:&quot;, colMap);
+    const headerRow = findHeaderRow(table);
+    if (!headerRow) return console.error(&quot;[ERROR] No se encontro la fila de encabezados con metricas.&quot;);
 
-    const pinnedRows = Array.from(table.querySelectorAll('.unified-table-pinned-columns .unified-table-data-row'));
-    const freeRows = Array.from(table.querySelectorAll('.unified-table-free-columns .unified-table-data-row'));
-    
+    const colMap = mapHeaders(headerRow);
+    console.log(&quot;[MAPEO] Columnas detectadas:&quot;, colMap);
+
+    const pinnedRows = Array.from(table.querySelectorAll(&quot;.unified-table-pinned-columns .unified-table-data-row&quot;));
+    const freeRows = Array.from(table.querySelectorAll(&quot;.unified-table-free-columns .unified-table-data-row&quot;));
     const rowCount = Math.min(pinnedRows.length, freeRows.length);
     console.log(`[PROCESO] Procesando ${rowCount} videos...`);
 
@@ -490,55 +518,44 @@
 
     for (let i = 0; i &lt; rowCount; i++) {
       try {
-        const pRow = pinnedRows[i]; // Info fija (título, img, creador)
-        const fRow = freeRows[i];   // Métricas (vistas, fecha)
-        const fCells = fRow.querySelectorAll('.unified-table-cell');
+        const pRow = pinnedRows[i];
+        const fRow = freeRows[i];
+        const fCells = fRow.querySelectorAll(&quot;.unified-table-cell&quot;);
 
-        // --- Extracción Pinned ---
-        const titleEl = pRow.querySelector('.name, .link-video-modal');
+        const titleEl = pRow.querySelector(&quot;.name, .link-video-modal&quot;);
         const video = titleEl ? titleEl.innerText.trim() : &quot;&quot;;
 
-        const creatorEl = pRow.querySelector('.uploader .link');
+        const creatorEl = pRow.querySelector(&quot;.uploader .link&quot;);
         const creator_name = creatorEl ? creatorEl.innerText.trim() : &quot;&quot;;
 
-        const urlEl = pRow.querySelector('a.link-platform-watch-page');
+        const urlEl = pRow.querySelector(&quot;a.link-platform-watch-page&quot;);
         const video_url = urlEl ? urlEl.href : &quot;&quot;;
 
-        // Extracción de IMAGEN (background-image) evitando foto de perfil
-        const thumbDiv = pRow.querySelector('.video-thumbnail');
         let image_url = &quot;&quot;;
+        const thumbDiv = pRow.querySelector(&quot;.video-thumbnail&quot;);
         if (thumbDiv) {
-            const style = window.getComputedStyle(thumbDiv);
-            const bg = style.backgroundImage; // url(&quot;...&quot;)
-            const match = bg.match(/url\(['&quot;]?(https?:\/\/[^'&quot;]+)['&quot;]?\)/);
-            if (match) image_url = match[1];
+          const style = window.getComputedStyle(thumbDiv);
+          const bg = style.backgroundImage;
+          const match = bg &amp;&amp; bg.match(/url\([&#x27;&quot;]?(https?:\/\/[^&#x27;&quot;]+)[&#x27;&quot;]?\)/);
+          if (match) image_url = match[1];
         }
         if (!image_url) {
-          const thumbImg = pRow.querySelector('.video-thumbnail img:not([class*=&quot;creator&quot;]), img[src*=&quot;ytimg&quot;], img[src*=&quot;cdninstagram&quot;], img[src*=&quot;fbcdn&quot;]');
+          const thumbImg = pRow.querySelector(&#x27;.video-thumbnail img:not([class*=&quot;creator&quot;]), img[src*=&quot;ytimg&quot;], img[src*=&quot;cdninstagram&quot;], img[src*=&quot;fbcdn&quot;]&#x27;);
           image_url = thumbImg?.src || &quot;&quot;;
         }
 
-        // Detectar plataforma por icono si no está en columnas
-        const iconEl = pRow.querySelector('[class*=&quot;platform-identifier&quot;] i');
-        let platform = iconEl ? iconEl.className.replace('icon-', '').replace('-sign', '').replace('-play', '') : &quot;&quot;;
-        platform = platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : &quot;&quot;;
-
-        // --- Extracción Free ---
         const upload_date = colMap.upload !== undefined ? fCells[colMap.upload]?.innerText.trim() : &quot;&quot;;
         const views = colMap.views !== undefined ? fCells[colMap.views]?.innerText.trim() : &quot;0&quot;;
         const v30 = colMap.v30 !== undefined ? fCells[colMap.v30]?.innerText.trim() : &quot;0&quot;;
         const duration = colMap.duration !== undefined ? fCells[colMap.duration]?.innerText.trim() : &quot;&quot;;
-        
-        // Si hay columna explicita de plataforma, úsala
+        let platform = detectPlatform(pRow, &quot;&quot;);
+
         if (colMap.platform !== undefined) {
-            const pText = fCells[colMap.platform]?.innerText.trim();
-            if (pText) platform = pText;
+          const pText = fCells[colMap.platform]?.innerText.trim();
+          if (pText) platform = pText;
         }
 
-        const row = {
-          video, creator_name, video_url, image_url, platform, upload_date, 
-          views, v30, duration
-        };
+        const row = { video, creator_name, video_url, image_url, platform, upload_date, views, v30, duration };
 
         if (opts.normalizeNumbers) {
           row.views_num = parseViews(views);
@@ -552,7 +569,6 @@
       }
     }
 
-    // 4. Generar CSV
     if (data.length &gt; 0) {
       const headers = Object.keys(data[0]);
       const csvContent = [
@@ -560,23 +576,23 @@
         ...data.map(row =&gt; headers.map(k =&gt; csvEscape(row[k])).join(&quot;,&quot;))
       ].join(&quot;\n&quot;);
 
-      // Descargar
       if (opts.downloadFile) {
-        const blob = new Blob([&quot;\ufeff&quot; + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([&quot;\ufeff&quot; + csvContent], { type: &quot;text/csv;charset=utf-8;&quot; });
         const link = document.createElement(&quot;a&quot;);
-        const dateStr = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+        const dateStr = new Date().toISOString().replace(/[:T]/g, &quot;-&quot;).slice(0, 19);
         link.href = URL.createObjectURL(blob);
         link.download = `${opts.fileNamePrefix}_${dateStr}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       }
-      
-      // Copiar al portapapeles
-      navigator.clipboard.writeText(csvContent).then(() =&gt; console.log(&quot;[CLIPBOARD] CSV copiado al portapapeles.&quot;));
+
+      navigator.clipboard.writeText(csvContent)
+        .then(() =&gt; console.log(&quot;[CLIPBOARD] CSV copiado al portapapeles.&quot;))
+        .catch(() =&gt; console.warn(&quot;[CLIPBOARD] No se pudo copiar al portapapeles.&quot;));
     }
 
-    console.log(`[OK] ${data.length} videos extraídos exitosamente.`);
+    console.log(`[OK] ${data.length} videos extraidos exitosamente.`);
     return data;
   };
 
@@ -592,7 +608,7 @@
 <p><a id="opcion-b-todo-en-uno"></a></p>
 <h2 id="opcion-b-todo-en-uno-pegar-y-listo">🅱️ Opcion B: todo en uno (pegar y listo)</h2>
 <pre><code class="language-js">(async () =&gt; {
-  console.log(&quot;[START] EXTRACTOR TubLab v3.1 - FIXED&quot;);
+  console.log(&quot;[START] EXTRACTOR TubLab v4.0 (todo en uno)&quot;);
   console.log(&quot;=&quot;.repeat(60));
 
   const CONFIG = {
@@ -604,13 +620,22 @@
     normalizeNumbers: true
   };
 
-  const sleep = ms =&gt; new Promise(r =&gt; setTimeout(r, ms));
-  const pad = n =&gt; String(n).padStart(2, &quot;0&quot;);
+  const LOAD_MORE_SELECTORS = [
+    &#x27;.button.full-width[ng-click*=&quot;loadMore&quot;]&#x27;,
+    &#x27;.load-more .button[ng-click*=&quot;loadMore&quot;]&#x27;,
+    &#x27;.load-more .button&#x27;,
+    &#x27;[ng-click*=&quot;loadMore&quot;]&#x27;,
+    null // fallback busca por texto
+  ];
+
+  const sleep = (ms) =&gt; new Promise(r =&gt; setTimeout(r, ms));
+  const pad = (n) =&gt; String(n).padStart(2, &quot;0&quot;);
   const generateFileName = () =&gt; {
     const now = new Date();
     return `Tubular_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
   };
-  const parseViews = txt =&gt; {
+  const csvEscape = (val) =&gt; &#x27;&quot;&#x27; + String(val ?? &quot;&quot;).replace(/&quot;/g, &#x27;&quot;&quot;&#x27;) + &#x27;&quot;&#x27;;
+  const parseViews = (txt) =&gt; {
     if (!txt || txt === &quot;--&quot;) return 0;
     const t = txt.trim().toUpperCase().replace(/,/g, &quot;&quot;);
     if (t.endsWith(&quot;B&quot;)) return Math.round(parseFloat(t) * 1e9);
@@ -618,25 +643,26 @@
     if (t.endsWith(&quot;K&quot;)) return Math.round(parseFloat(t) * 1e3);
     return Math.round(parseFloat(t)) || 0;
   };
-  const durationToSeconds = d =&gt; {
-    if (!d || d === &quot;--&quot;) return 0;
-    const parts = d.split(&quot;:&quot;).map(n =&gt; parseInt(n, 10) || 0);
+  const parseDuration = (txt) =&gt; {
+    if (!txt || txt === &quot;--&quot;) return 0;
+    const parts = txt.split(&quot;:&quot;).map(n =&gt; parseInt(n, 10) || 0);
     if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
     if (parts.length === 2) return parts[0] * 60 + parts[1];
     return parts[0] || 0;
   };
+  const normHeader = (txt) =&gt; txt.toLowerCase().replace(/[^a-z0-9]+/g, &quot; &quot; ).trim();
+  const headerAliases = {
+    upload: [&quot;upload date&quot;, &quot;uploaded&quot;, &quot;published&quot;, &quot;posted&quot;, &quot;video was uploaded&quot;],
+    views: [&quot;views&quot;, &quot;view count&quot;, &quot;video views&quot;],
+    v30: [&quot;v30&quot;, &quot;views 30&quot;, &quot;views (30d)&quot;],
+    duration: [&quot;duration&quot;, &quot;length&quot;, &quot;video duration&quot;],
+    platform: [&quot;platform&quot;, &quot;site&quot;, &quot;network&quot;]
+  };
 
-  function findLoadMoreButton() {
-    const selectors = [
-      '.button.full-width[ng-click*=&quot;loadMore&quot;]',
-      '.load-more .button[ng-click*=&quot;loadMore&quot;]',
-      '.load-more .button',
-      '[ng-click*=&quot;loadMore&quot;]',
-      null
-    ];
-    for (const sel of selectors) {
+  const findLoadMoreButton = () =&gt; {
+    for (const sel of LOAD_MORE_SELECTORS) {
       if (sel === null) {
-        const candidates = Array.from(document.querySelectorAll('button, div.button, a.button'));
+        const candidates = Array.from(document.querySelectorAll(&quot;button, div.button, a.button&quot;));
         const btn = candidates.find(el =&gt; /load\s*more/i.test(el.innerText || &quot;&quot;) &amp;&amp; el.offsetParent !== null);
         if (btn) return btn;
       } else {
@@ -645,15 +671,49 @@
       }
     }
     return null;
-  }
+  };
 
-  // FASE 1
+  const findHeaderRow = (table) =&gt; {
+    const candidates = [
+      ...table.querySelectorAll(&quot;.unified-table-floating-header .unified-table-header-row&quot;),
+      ...table.querySelectorAll(&quot;.unified-table-header-row&quot;)
+    ];
+    return candidates.find(r =&gt; r.innerText.toLowerCase().includes(&quot;views&quot;) ||
+                                r.innerText.toLowerCase().includes(&quot;upload&quot;));
+  };
+
+  const mapHeaders = (headerRow) =&gt; {
+    const headerCells = Array.from(headerRow.querySelectorAll(&quot;.unified-table-cell, .unified-table-header-cell&quot;));
+    const colMap = {};
+    headerCells.forEach((cell, idx) =&gt; {
+      const n = normHeader(cell.innerText);
+      Object.entries(headerAliases).forEach(([key, aliases]) =&gt; {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a =&gt; n === a)) colMap[key] = idx;
+      });
+      Object.entries(headerAliases).forEach(([key, aliases]) =&gt; {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a =&gt; n.startsWith(a))) colMap[key] = idx;
+      });
+    });
+    return colMap;
+  };
+
+  const detectPlatform = (pRow, fallbackText) =&gt; {
+    const iconEl = pRow.querySelector(&#x27;[class*=&quot;platform-identifier&quot;] i&#x27;);
+    let platform = &quot;&quot;;
+    if (iconEl) platform = iconEl.className.replace(/icon-/, &quot;&quot;).replace(/-sign|-play/, &quot;&quot;);
+    else if (fallbackText) platform = fallbackText;
+    return platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : &quot;&quot;;
+  };
+
+  // FASE 1: carga incremental
   console.log(`\n[FASE1] Cargando videos (max ${CONFIG.maxClicks} clics)...`);
   let clicks = 0;
   for (let i = 0; i &lt; CONFIG.maxClicks; i++) {
     const btn = findLoadMoreButton();
     if (!btn) {
-      console.log(&quot;[OK] No hay mas boton 'Load more' visible&quot;);
+      console.log(&quot;[OK] No hay mas boton &#x27;Load more&#x27; visible&quot;);
       break;
     }
     btn.scrollIntoView({ block: &quot;center&quot;, behavior: &quot;instant&quot; });
@@ -666,49 +726,30 @@
   console.log(`[OK] Total clics: ${clicks}`);
   await sleep(CONFIG.finalDelay);
 
-  // FASE 2
+  // FASE 2: localizar tabla
   console.log(&quot;\n[FASE2] Buscando tabla...&quot;);
-  const table = Array.from(document.querySelectorAll('unified-table'))
-    .find(t =&gt; /Upload Date/i.test(t.innerText) &amp;&amp; /Views/i.test(t.innerText));
+  const table = Array.from(document.querySelectorAll(&quot;unified-table&quot;)).find(t =&gt; {
+    const txt = t.innerText.toLowerCase();
+    return txt.includes(&quot;upload date&quot;) &amp;&amp; txt.includes(&quot;views&quot;);
+  });
   if (!table) return console.error(&quot;[ERROR] No se encontro la tabla&quot;);
   console.log(&quot;[OK] Tabla encontrada&quot;);
 
-  // FASE 3 (header corregido)
+  // FASE 3: mapear columnas de forma robusta
   console.log(&quot;\n[FASE3] Detectando columnas...&quot;);
-  const floatingHeader = table.querySelector('.unified-table-floating-header');
-  const headerRow = floatingHeader?.querySelector('.unified-table-header-row') ||
-                    floatingHeader?.querySelector('.unified-table-row');
-  if (!headerRow) {
-    console.error(&quot;[ERROR] No se encontro el header row&quot;);
-    console.log(&quot;[DEBUG] floatingHeader:&quot;, floatingHeader);
-    return;
-  }
-  const headerCells = Array.from(headerRow.querySelectorAll('.unified-table-header-cell, .unified-table-cell'));
-  const colMap = {};
-  headerCells.forEach((cell, idx) =&gt; {
-    const t = (cell.innerText || &quot;&quot;).trim().toLowerCase();
-    console.log(`   [${idx}] &quot;${t}&quot;`);
-    if (/upload\s*date/i.test(t)) colMap.uploadDate = idx;
-    else if (/^views$/i.test(t)) colMap.views = idx;
-    else if (/^v30$/i.test(t)) colMap.v30 = idx;
-    else if (/duration/i.test(t)) colMap.duration = idx;
-    else if (/platform/i.test(t)) colMap.platform = idx;
-  });
+  const headerRow = findHeaderRow(table);
+  if (!headerRow) return console.error(&quot;[ERROR] No se encontro el header row con metricas&quot;);
+  const colMap = mapHeaders(headerRow);
   console.log(&quot;[OK] Mapeo:&quot;, colMap);
+  if (!Object.keys(colMap).length) return console.error(&quot;[ERROR] Sin columnas de metricas detectadas&quot;);
 
-  // FASE 4
+  // FASE 4: extraer filas
   console.log(&quot;\n[FASE4] Extrayendo datos...&quot;);
-  const pRows = Array.from(table.querySelectorAll('.unified-table-pinned-columns .unified-table-data-row'));
-  const fRows = Array.from(table.querySelectorAll('.unified-table-free-columns .unified-table-data-row'));
+  const pRows = Array.from(table.querySelectorAll(&quot;.unified-table-pinned-columns .unified-table-data-row&quot;));
+  const fRows = Array.from(table.querySelectorAll(&quot;.unified-table-free-columns .unified-table-data-row&quot;));
   const rowCount = Math.min(pRows.length, fRows.length);
   if (!rowCount) return console.error(&quot;[ERROR] No hay filas&quot;);
   console.log(`   Procesando ${rowCount} filas...`);
-
-  if (fRows.length &gt; 0) {
-    const firstRowCells = Array.from(fRows[0].querySelectorAll('.unified-table-cell'));
-    console.log(&quot;[DEBUG] Primera fila FREE:&quot;);
-    firstRowCells.forEach((c, i) =&gt; console.log(`   [${i}] &quot;${(c.innerText || &quot;&quot;).trim()}&quot;`));
-  }
 
   const data = [];
   let errors = 0;
@@ -716,55 +757,48 @@
     try {
       const pRow = pRows[i];
       const fRow = fRows[i];
-      const cells = Array.from(fRow.querySelectorAll('.unified-table-cell'));
+      const cells = Array.from(fRow.querySelectorAll(&quot;.unified-table-cell&quot;));
 
-      const titleEl = pRow.querySelector('.name, a.link-video-modal, .video-lockup .name');
+      const titleEl = pRow.querySelector(&quot;.name, a.link-video-modal, .video-lockup .name&quot;);
       const video = (titleEl?.innerText || &quot;&quot;).trim();
 
-      const uploaderEl = pRow.querySelector('.uploader');
+      const uploaderEl = pRow.querySelector(&quot;.uploader&quot;);
       const creator_name = (uploaderEl?.innerText || &quot;&quot;).replace(/^\s*by\s*/i, &quot;&quot;).trim();
 
-      const videoUrlEl = pRow.querySelector('a.link-platform-watch-page');
+      const videoUrlEl = pRow.querySelector(&quot;a.link-platform-watch-page&quot;);
       const video_url = videoUrlEl?.href || &quot;&quot;;
 
       let image_url = &quot;&quot;;
-      const thumbDiv = pRow.querySelector('.video-thumbnail');
+      const thumbDiv = pRow.querySelector(&quot;.video-thumbnail&quot;);
       if (thumbDiv) {
         const bg = window.getComputedStyle(thumbDiv).backgroundImage;
-        const match = bg.match(/url\([&quot;']?(https?:\/\/[^&quot;')]+)[&quot;']?\)/);
+        const match = bg &amp;&amp; bg.match(/url\([&quot;&#x27;]?(https?:\/\/[^&quot;&#x27;)]+)[&quot;&#x27;]?\)/);
         if (match) image_url = match[1];
       }
       if (!image_url) {
-        const thumbImg = pRow.querySelector('.video-thumbnail img:not([class*=&quot;creator&quot;]), img[src*=&quot;ytimg&quot;], img[src*=&quot;cdninstagram&quot;], img[src*=&quot;fbcdn&quot;]');
+        const thumbImg = pRow.querySelector(&#x27;.video-thumbnail img:not([class*=&quot;creator&quot;]), img[src*=&quot;ytimg&quot;], img[src*=&quot;cdninstagram&quot;], img[src*=&quot;fbcdn&quot;]&#x27;);
         image_url = thumbImg?.src || &quot;&quot;;
       }
 
-      const platformEl = pRow.querySelector('[class*=&quot;platform-identifier&quot;] i, [class*=&quot;platform-&quot;]');
-      const platformClass = platformEl?.className || &quot;&quot;;
-      let platformDetected = &quot;&quot;;
-      if (/instagram/i.test(platformClass)) platformDetected = &quot;Instagram&quot;;
-      else if (/youtube/i.test(platformClass)) platformDetected = &quot;YouTube&quot;;
-      else if (/tiktok/i.test(platformClass)) platformDetected = &quot;TikTok&quot;;
-      else if (/facebook/i.test(platformClass)) platformDetected = &quot;Facebook&quot;;
-
-      const getCell = key =&gt; {
+      const getCell = (key) =&gt; {
         if (colMap[key] === undefined) return &quot;&quot;;
         const cell = cells[colMap[key]];
         return (cell?.innerText || &quot;&quot;).trim();
       };
 
-      const upload_date = getCell(&quot;uploadDate&quot;);
+      const upload_date = getCell(&quot;upload&quot;);
       const views = getCell(&quot;views&quot;);
       const v30 = getCell(&quot;v30&quot;);
       const duration = getCell(&quot;duration&quot;);
       const platformFromCol = getCell(&quot;platform&quot;);
-      const platform = platformFromCol || platformDetected;
+      let platform = detectPlatform(pRow, platformFromCol);
+      if (platformFromCol) platform = platformFromCol;
 
       const row = { video, creator_name, video_url, image_url, upload_date, views, v30, duration, platform };
       if (CONFIG.normalizeNumbers) {
         row.views_num = parseViews(views);
         row.v30_num = parseViews(v30);
-        row.duration_sec = durationToSeconds(duration);
+        row.duration_sec = parseDuration(duration);
       }
       data.push(row);
     } catch (err) {
@@ -775,16 +809,11 @@
 
   console.log(`[OK] Extraidos: ${data.length} videos`);
   if (errors) console.warn(`[WARN] Errores: ${errors}`);
-  if (data.length &gt; 0) {
-    console.log(&quot;\n[MUESTRA] Primeros 3 registros:&quot;);
-    console.table(data.slice(0, 3));
-  }
   if (!data.length) return console.error(&quot;[ERROR] No se extrajo nada&quot;);
 
-  // FASE 5
+  // FASE 5: CSV + clipboard + descarga
   console.log(&quot;\n[FASE5] Generando CSV...&quot;);
-  const csvEscape = v =&gt; '&quot;' + String(v ?? &quot;&quot;).replace(/&quot;/g, '&quot;&quot;') + '&quot;';
-  const headers = Object.keys(data[0]);
+  const headers = [&quot;video&quot;, &quot;creator_name&quot;, &quot;video_url&quot;, &quot;image_url&quot;, &quot;upload_date&quot;, &quot;views&quot;, &quot;v30&quot;, &quot;duration&quot;, &quot;platform&quot;, &quot;views_num&quot;, &quot;v30_num&quot;, &quot;duration_sec&quot;];
   const csvLines = [
     headers.map(csvEscape).join(&quot;,&quot;),
     ...data.map(row =&gt; headers.map(h =&gt; csvEscape(row[h])).join(&quot;,&quot;))
@@ -792,9 +821,15 @@
   const csv = &quot;\ufeff&quot; + csvLines.join(&quot;\n&quot;);
 
   try {
-    await navigator.clipboard.writeText(csv);
-    console.log(&quot;[OK] Copiado al portapapeles&quot;);
-  } catch { console.warn(&quot;[WARN] No se pudo copiar&quot;); }
+    if (document.hasFocus()) {
+      await navigator.clipboard.writeText(csv);
+      console.log(&quot;[OK] Copiado al portapapeles&quot;);
+    } else {
+      console.warn(&quot;[WARN] Pagina sin foco; se omite copiado&quot;);
+    }
+  } catch {
+    console.warn(&quot;[WARN] No se pudo copiar&quot;);
+  }
 
   if (CONFIG.downloadFile) {
     const fileName = generateFileName();
@@ -1004,7 +1039,7 @@
       }
 
       function highlightJS(txt) {
-        const token = /(\\/\\/.*$)|(['`](?:\\\\.|[^\\\\])*?['`]|\"(?:\\\\.|[^\\\\\"])*?\")|\\b\\d+(?:\\.\\d+)?\\b|\\b(?:const|let|var|function|return|if|else|for|while|await|async|break|continue|try|catch|throw|new|class|extends|switch|case|default|import|from|export|typeof|instanceof)\\b|\\b(?:window|document|console|navigator|Math|Date|Array|Object|Promise)\\b|=>|[=+\\-/*]{1,2}|\\b[a-zA-Z_$][\\w$]*(?=\\s*\\()/gm;
+        const token = /(\/\/.*$)|(['`](?:\\.|[^\\])*?['`]|"(?:\\.|[^\\"])*?")|\b\d+(?:\.\d+)?\b|\b(?:const|let|var|function|return|if|else|for|while|await|async|break|continue|try|catch|throw|new|class|extends|switch|case|default|import|from|export|typeof|instanceof)\b|\b(?:window|document|console|navigator|Math|Date|Array|Object|Promise)\b|=>|[=+\-/*]{1,2}|\b[a-zA-Z_$][\w$]*(?=\s*\()/gm;
         let out = "";
         let last = 0;
         let m;
@@ -1017,7 +1052,7 @@
           else if (/^\\d/.test(match)) cls = "tok-num";
           else if (/^(const|let|var|function|return|if|else|for|while|await|async|break|continue|try|catch|throw|new|class|extends|switch|case|default|import|from|export|typeof|instanceof)$/.test(match)) cls = "tok-kw";
           else if (/^(window|document|console|navigator|Math|Date|Array|Object|Promise)$/.test(match)) cls = "tok-var";
-          else if (match === "=>" || /^[=+\\-/*]+$/.test(match)) cls = "tok-op";
+          else if (match === "=>" || /^[=+/*-]+$/.test(match)) cls = "tok-op";
           else cls = "tok-fn";
           out += `<span class="${cls}">${escapeHtml(match)}</span>`;
           last = token.lastIndex;

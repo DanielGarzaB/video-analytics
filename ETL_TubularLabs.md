@@ -130,14 +130,12 @@
   };
 
   const csvEscape = (val) => '"' + String(val ?? "").replace(/"/g, '""') + '"';
-
   const parseViews = (txt) => {
     if (!txt || txt === "--") return 0;
     const t = txt.trim().toUpperCase().replace(/,/g, "");
     const mult = t.endsWith("B") ? 1e9 : t.endsWith("M") ? 1e6 : t.endsWith("K") ? 1e3 : 1;
     return Math.round(parseFloat(t) * mult) || 0;
   };
-
   const parseDuration = (txt) => {
     if (!txt || txt === "--") return 0;
     const parts = txt.split(":").map(n => parseInt(n, 10) || 0);
@@ -145,31 +143,63 @@
       : parts.length === 2 ? parts[0] * 60 + parts[1]
       : parts[0];
   };
+  const normHeader = (txt) => txt.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const headerAliases = {
+    upload: ["upload date", "uploaded", "published", "posted", "video was uploaded"],
+    views: ["views", "view count", "video views"],
+    v30: ["v30", "views 30", "views (30d)"],
+    duration: ["duration", "length", "video duration"],
+    platform: ["platform", "site", "network"]
+  };
 
-  window.extractVideos = async function(customOptions = {}) {
-    const opts = { ...EXTRACT_CONFIG, ...customOptions };
+  const findHeaderRow = (table) => {
+    const candidates = [
+      ...table.querySelectorAll(".unified-table-floating-header .unified-table-header-row"),
+      ...table.querySelectorAll(".unified-table-header-row")
+    ];
+    return candidates.find(r => r.innerText.toLowerCase().includes("views") ||
+                                r.innerText.toLowerCase().includes("upload"));
+  };
 
-    // 1) Ubicar tabla y header de metricas (flotante)
-    const table = Array.from(document.querySelectorAll("unified-table")).find(t =>
-      t.innerText.includes("Upload Date") && t.innerText.includes("Views")
-    );
-    if (!table) return console.error("[ERROR] No se encontro la tabla 'Video Gallery'.");
-
-    const headerRow = Array.from(document.querySelectorAll(".unified-table-floating-header .unified-table-header-row, .unified-table-header-row"))
-      .find(r => r.innerText.toLowerCase().includes("upload date") && r.innerText.toLowerCase().includes("views"));
-    if (!headerRow) return console.error("[ERROR] No se encontro la fila de encabezados con metricas.");
-
-    const headerCells = Array.from(headerRow.querySelectorAll(".unified-table-cell"));
+  const mapHeaders = (headerRow) => {
+    const headerCells = Array.from(headerRow.querySelectorAll(".unified-table-cell, .unified-table-header-cell"));
     const colMap = {};
     headerCells.forEach((cell, idx) => {
-      const txt = cell.innerText.toLowerCase().trim();
-      if (txt.includes("upload date")) colMap.upload = idx;
-      else if (txt === "views") colMap.views = idx;
-      else if (txt === "v30") colMap.v30 = idx;
-      else if (txt === "duration") colMap.duration = idx;
-      else if (txt === "platform") colMap.platform = idx;
+      const n = normHeader(cell.innerText);
+      Object.entries(headerAliases).forEach(([key, aliases]) => {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a => n === a)) colMap[key] = idx;
+      });
+      Object.entries(headerAliases).forEach(([key, aliases]) => {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a => n.startsWith(a))) colMap[key] = idx;
+      });
     });
-    if (Object.keys(colMap).length === 0) return console.error("[ERROR] No se mapeo ninguna columna de metricas.");
+    return colMap;
+  };
+
+  const detectPlatform = (pRow, fallbackText) => {
+    const iconEl = pRow.querySelector('[class*="platform-identifier"] i');
+    let platform = "";
+    if (iconEl) platform = iconEl.className.replace(/icon-/, "").replace(/-sign|-play/, "");
+    else if (fallbackText) platform = fallbackText;
+    return platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "";
+  };
+
+  window.extractVideos = function(customOptions = {}) {
+    const opts = { ...EXTRACT_CONFIG, ...customOptions };
+
+    const table = Array.from(document.querySelectorAll("unified-table")).find(t => {
+      const txt = t.innerText.toLowerCase();
+      return txt.includes("upload date") && txt.includes("views");
+    });
+    if (!table) return console.error("[ERROR] No se encontro la tabla 'Video Gallery'.");
+
+    const headerRow = findHeaderRow(table);
+    if (!headerRow) return console.error("[ERROR] No se encontro la fila de encabezados con metricas.");
+
+    const colMap = mapHeaders(headerRow);
+    console.log("[MAPEO] Columnas detectadas:", colMap);
 
     const pinnedRows = Array.from(table.querySelectorAll(".unified-table-pinned-columns .unified-table-data-row"));
     const freeRows = Array.from(table.querySelectorAll(".unified-table-free-columns .unified-table-data-row"));
@@ -177,6 +207,7 @@
     console.log(`[PROCESO] Procesando ${rowCount} videos...`);
 
     const data = [];
+
     for (let i = 0; i < rowCount; i++) {
       try {
         const pRow = pinnedRows[i];
@@ -197,7 +228,7 @@
         if (thumbDiv) {
           const style = window.getComputedStyle(thumbDiv);
           const bg = style.backgroundImage;
-          const match = bg.match(/url\(['"]?(https?:\/\/[^'"]+)['"]?\)/);
+          const match = bg && bg.match(/url\\(['"]?(https?:\\/\\/[^'"]+)['"]?\\)/);
           if (match) image_url = match[1];
         }
         if (!image_url) {
@@ -205,14 +236,11 @@
           image_url = thumbImg?.src || "";
         }
 
-        const iconEl = pRow.querySelector('[class*="platform-identifier"] i');
-        let platform = iconEl ? iconEl.className.replace("icon-", "").replace("-sign", "").replace("-play", "") : "";
-        platform = platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "";
-
         const upload_date = colMap.upload !== undefined ? fCells[colMap.upload]?.innerText.trim() : "";
         const views = colMap.views !== undefined ? fCells[colMap.views]?.innerText.trim() : "0";
         const v30 = colMap.v30 !== undefined ? fCells[colMap.v30]?.innerText.trim() : "0";
         const duration = colMap.duration !== undefined ? fCells[colMap.duration]?.innerText.trim() : "";
+        let platform = detectPlatform(pRow, "");
 
         if (colMap.platform !== undefined) {
           const pText = fCells[colMap.platform]?.innerText.trim();
@@ -220,11 +248,13 @@
         }
 
         const row = { video, creator_name, video_url, image_url, platform, upload_date, views, v30, duration };
+
         if (opts.normalizeNumbers) {
           row.views_num = parseViews(views);
           row.v30_num = parseViews(v30);
           row.duration_sec = parseDuration(duration);
         }
+
         data.push(row);
       } catch (err) {
         console.warn(`Error en fila ${i}`, err);
@@ -232,10 +262,10 @@
     }
 
     if (data.length > 0) {
-      const headers = ["video", "creator_name", "video_url", "image_url", "platform", "upload_date", "views", "v30", "duration", "views_num", "v30_num", "duration_sec"];
+      const headers = Object.keys(data[0]);
       const csvContent = [
         headers.map(csvEscape).join(","),
-        ...data.map(row => headers.map(k => csvEscape(row[k] ?? "")).join(","))
+        ...data.map(row => headers.map(k => csvEscape(row[k])).join(","))
       ].join("\n");
 
       if (opts.downloadFile) {
@@ -249,16 +279,9 @@
         document.body.removeChild(link);
       }
 
-      try {
-        if (document.hasFocus()) {
-          await navigator.clipboard.writeText(csvContent);
-          console.log("[CLIPBOARD] CSV copiado al portapapeles.");
-        } else {
-          console.warn("[CLIPBOARD] Pagina sin foco; se omite copiado.");
-        }
-      } catch (e) {
-        console.warn("[CLIPBOARD] No se pudo copiar:", e.message);
-      }
+      navigator.clipboard.writeText(csvContent)
+        .then(() => console.log("[CLIPBOARD] CSV copiado al portapapeles."))
+        .catch(() => console.warn("[CLIPBOARD] No se pudo copiar al portapapeles."));
     }
 
     console.log(`[OK] ${data.length} videos extraidos exitosamente.`);
@@ -267,7 +290,7 @@
 
   if (EXTRACT_CONFIG.autoStart) {
     console.log("[OK] Script Extractor cargado. Ejecutando extractVideos()...");
-    extractVideos().catch(err => console.error("[ERROR] extractVideos fallo:", err));
+    extractVideos();
   } else {
     console.log("[OK] Script Extractor cargado. Escribe: extractVideos();");
   }
@@ -281,7 +304,7 @@
 
 ```js
 (async () => {
-  console.log("[START] EXTRACTOR TubLab v3.2");
+  console.log("[START] EXTRACTOR TubLab v4.0 (todo en uno)");
   console.log("=".repeat(60));
 
   const CONFIG = {
@@ -293,13 +316,22 @@
     normalizeNumbers: true
   };
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const pad = n => String(n).padStart(2, "0");
+  const LOAD_MORE_SELECTORS = [
+    '.button.full-width[ng-click*="loadMore"]',
+    '.load-more .button[ng-click*="loadMore"]',
+    '.load-more .button',
+    '[ng-click*="loadMore"]',
+    null // fallback busca por texto
+  ];
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const pad = (n) => String(n).padStart(2, "0");
   const generateFileName = () => {
     const now = new Date();
     return `Tubular_${String(now.getFullYear()).slice(-2)}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.csv`;
   };
-  const parseViews = txt => {
+  const csvEscape = (val) => '"' + String(val ?? "").replace(/"/g, '""') + '"';
+  const parseViews = (txt) => {
     if (!txt || txt === "--") return 0;
     const t = txt.trim().toUpperCase().replace(/,/g, "");
     if (t.endsWith("B")) return Math.round(parseFloat(t) * 1e9);
@@ -307,25 +339,26 @@
     if (t.endsWith("K")) return Math.round(parseFloat(t) * 1e3);
     return Math.round(parseFloat(t)) || 0;
   };
-  const durationToSeconds = d => {
-    if (!d || d === "--") return 0;
-    const parts = d.split(":").map(n => parseInt(n, 10) || 0);
+  const parseDuration = (txt) => {
+    if (!txt || txt === "--") return 0;
+    const parts = txt.split(":").map(n => parseInt(n, 10) || 0);
     if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
     if (parts.length === 2) return parts[0] * 60 + parts[1];
     return parts[0] || 0;
   };
+  const normHeader = (txt) => txt.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const headerAliases = {
+    upload: ["upload date", "uploaded", "published", "posted", "video was uploaded"],
+    views: ["views", "view count", "video views"],
+    v30: ["v30", "views 30", "views (30d)"],
+    duration: ["duration", "length", "video duration"],
+    platform: ["platform", "site", "network"]
+  };
 
-  function findLoadMoreButton() {
-    const selectors = [
-      '.button.full-width[ng-click*="loadMore"]',
-      '.load-more .button[ng-click*="loadMore"]',
-      '.load-more .button',
-      '[ng-click*="loadMore"]',
-      null
-    ];
-    for (const sel of selectors) {
+  const findLoadMoreButton = () => {
+    for (const sel of LOAD_MORE_SELECTORS) {
       if (sel === null) {
-        const candidates = Array.from(document.querySelectorAll('button, div.button, a.button'));
+        const candidates = Array.from(document.querySelectorAll("button, div.button, a.button"));
         const btn = candidates.find(el => /load\s*more/i.test(el.innerText || "") && el.offsetParent !== null);
         if (btn) return btn;
       } else {
@@ -334,9 +367,43 @@
       }
     }
     return null;
-  }
+  };
 
-  // FASE 1
+  const findHeaderRow = (table) => {
+    const candidates = [
+      ...table.querySelectorAll(".unified-table-floating-header .unified-table-header-row"),
+      ...table.querySelectorAll(".unified-table-header-row")
+    ];
+    return candidates.find(r => r.innerText.toLowerCase().includes("views") ||
+                                r.innerText.toLowerCase().includes("upload"));
+  };
+
+  const mapHeaders = (headerRow) => {
+    const headerCells = Array.from(headerRow.querySelectorAll(".unified-table-cell, .unified-table-header-cell"));
+    const colMap = {};
+    headerCells.forEach((cell, idx) => {
+      const n = normHeader(cell.innerText);
+      Object.entries(headerAliases).forEach(([key, aliases]) => {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a => n === a)) colMap[key] = idx;
+      });
+      Object.entries(headerAliases).forEach(([key, aliases]) => {
+        if (colMap[key] !== undefined) return;
+        if (aliases.some(a => n.startsWith(a))) colMap[key] = idx;
+      });
+    });
+    return colMap;
+  };
+
+  const detectPlatform = (pRow, fallbackText) => {
+    const iconEl = pRow.querySelector('[class*="platform-identifier"] i');
+    let platform = "";
+    if (iconEl) platform = iconEl.className.replace(/icon-/, "").replace(/-sign|-play/, "");
+    else if (fallbackText) platform = fallbackText;
+    return platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "";
+  };
+
+  // FASE 1: carga incremental
   console.log(`\n[FASE1] Cargando videos (max ${CONFIG.maxClicks} clics)...`);
   let clicks = 0;
   for (let i = 0; i < CONFIG.maxClicks; i++) {
@@ -355,35 +422,27 @@
   console.log(`[OK] Total clics: ${clicks}`);
   await sleep(CONFIG.finalDelay);
 
-  // FASE 2
+  // FASE 2: localizar tabla
   console.log("\n[FASE2] Buscando tabla...");
-  const table = Array.from(document.querySelectorAll('unified-table'))
-    .find(t => /Upload Date/i.test(t.innerText) && /Views/i.test(t.innerText));
+  const table = Array.from(document.querySelectorAll("unified-table")).find(t => {
+    const txt = t.innerText.toLowerCase();
+    return txt.includes("upload date") && txt.includes("views");
+  });
   if (!table) return console.error("[ERROR] No se encontro la tabla");
   console.log("[OK] Tabla encontrada");
 
-  // FASE 3 (header robusto)
+  // FASE 3: mapear columnas de forma robusta
   console.log("\n[FASE3] Detectando columnas...");
-  const headerRow = Array.from(document.querySelectorAll('.unified-table-floating-header .unified-table-header-row, .unified-table-header-row'))
-    .find(r => r.innerText.toLowerCase().includes('upload date') && r.innerText.toLowerCase().includes('views'));
+  const headerRow = findHeaderRow(table);
   if (!headerRow) return console.error("[ERROR] No se encontro el header row con metricas");
-  const headerCells = Array.from(headerRow.querySelectorAll('.unified-table-header-cell, .unified-table-cell'));
-  const colMap = {};
-  headerCells.forEach((cell, idx) => {
-    const t = (cell.innerText || "").trim().toLowerCase();
-    if (t.includes('upload date')) colMap.upload = idx;
-    else if (t === 'views') colMap.views = idx;
-    else if (t === 'v30') colMap.v30 = idx;
-    else if (t.includes('duration')) colMap.duration = idx;
-    else if (t === 'platform') colMap.platform = idx;
-  });
+  const colMap = mapHeaders(headerRow);
   console.log("[OK] Mapeo:", colMap);
   if (!Object.keys(colMap).length) return console.error("[ERROR] Sin columnas de metricas detectadas");
 
-  // FASE 4
+  // FASE 4: extraer filas
   console.log("\n[FASE4] Extrayendo datos...");
-  const pRows = Array.from(table.querySelectorAll('.unified-table-pinned-columns .unified-table-data-row'));
-  const fRows = Array.from(table.querySelectorAll('.unified-table-free-columns .unified-table-data-row'));
+  const pRows = Array.from(table.querySelectorAll(".unified-table-pinned-columns .unified-table-data-row"));
+  const fRows = Array.from(table.querySelectorAll(".unified-table-free-columns .unified-table-data-row"));
   const rowCount = Math.min(pRows.length, fRows.length);
   if (!rowCount) return console.error("[ERROR] No hay filas");
   console.log(`   Procesando ${rowCount} filas...`);
@@ -394,22 +453,22 @@
     try {
       const pRow = pRows[i];
       const fRow = fRows[i];
-      const cells = Array.from(fRow.querySelectorAll('.unified-table-cell'));
+      const cells = Array.from(fRow.querySelectorAll(".unified-table-cell"));
 
-      const titleEl = pRow.querySelector('.name, a.link-video-modal, .video-lockup .name');
+      const titleEl = pRow.querySelector(".name, a.link-video-modal, .video-lockup .name");
       const video = (titleEl?.innerText || "").trim();
 
-      const uploaderEl = pRow.querySelector('.uploader');
+      const uploaderEl = pRow.querySelector(".uploader");
       const creator_name = (uploaderEl?.innerText || "").replace(/^\s*by\s*/i, "").trim();
 
-      const videoUrlEl = pRow.querySelector('a.link-platform-watch-page');
+      const videoUrlEl = pRow.querySelector("a.link-platform-watch-page");
       const video_url = videoUrlEl?.href || "";
 
       let image_url = "";
-      const thumbDiv = pRow.querySelector('.video-thumbnail');
+      const thumbDiv = pRow.querySelector(".video-thumbnail");
       if (thumbDiv) {
         const bg = window.getComputedStyle(thumbDiv).backgroundImage;
-        const match = bg.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
+        const match = bg && bg.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
         if (match) image_url = match[1];
       }
       if (!image_url) {
@@ -417,15 +476,7 @@
         image_url = thumbImg?.src || "";
       }
 
-      const platformEl = pRow.querySelector('[class*="platform-identifier"] i, [class*="platform-"]');
-      const platformClass = platformEl?.className || "";
-      let platformDetected = "";
-      if (/instagram/i.test(platformClass)) platformDetected = "Instagram";
-      else if (/youtube/i.test(platformClass)) platformDetected = "YouTube";
-      else if (/tiktok/i.test(platformClass)) platformDetected = "TikTok";
-      else if (/facebook/i.test(platformClass)) platformDetected = "Facebook";
-
-      const getCell = key => {
+      const getCell = (key) => {
         if (colMap[key] === undefined) return "";
         const cell = cells[colMap[key]];
         return (cell?.innerText || "").trim();
@@ -436,13 +487,14 @@
       const v30 = getCell("v30");
       const duration = getCell("duration");
       const platformFromCol = getCell("platform");
-      const platform = platformFromCol || platformDetected;
+      let platform = detectPlatform(pRow, platformFromCol);
+      if (platformFromCol) platform = platformFromCol;
 
       const row = { video, creator_name, video_url, image_url, upload_date, views, v30, duration, platform };
       if (CONFIG.normalizeNumbers) {
         row.views_num = parseViews(views);
         row.v30_num = parseViews(v30);
-        row.duration_sec = durationToSeconds(duration);
+        row.duration_sec = parseDuration(duration);
       }
       data.push(row);
     } catch (err) {
@@ -455,9 +507,8 @@
   if (errors) console.warn(`[WARN] Errores: ${errors}`);
   if (!data.length) return console.error("[ERROR] No se extrajo nada");
 
-  // FASE 5
+  // FASE 5: CSV + clipboard + descarga
   console.log("\n[FASE5] Generando CSV...");
-  const csvEscape = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
   const headers = ["video", "creator_name", "video_url", "image_url", "upload_date", "views", "v30", "duration", "platform", "views_num", "v30_num", "duration_sec"];
   const csvLines = [
     headers.map(csvEscape).join(","),
@@ -472,7 +523,9 @@
     } else {
       console.warn("[WARN] Pagina sin foco; se omite copiado");
     }
-  } catch { console.warn("[WARN] No se pudo copiar"); }
+  } catch {
+    console.warn("[WARN] No se pudo copiar");
+  }
 
   if (CONFIG.downloadFile) {
     const fileName = generateFileName();
